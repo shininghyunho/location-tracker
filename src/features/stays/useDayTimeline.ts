@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getCollectorPointsAfter, getPointsByDate } from '../../db/points';
 import type { Point } from '../../db/points';
-import { getLastCollectorStayEnd, getStaysByDate, insertStay } from '../../db/stays';
+import { findNearestLabel, getLastCollectorStayEnd, getStaysByDate, insertStay } from '../../db/stays';
 import type { Stay } from '../../db/stays';
 import { detectStays } from './detectStays';
 import type { StayDraft } from './detectStays';
@@ -19,7 +19,7 @@ async function recomputeStays(): Promise<StayDraft | null> {
       end_ts: s.endTs,
       lat: s.lat,
       lng: s.lng,
-      label: null,
+      label: await findNearestLabel(s.lat, s.lng),
       source: 'collector',
     });
   }
