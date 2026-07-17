@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import BackgroundGeolocation from '@transistorsoft/capacitor-background-geolocation';
 // 플러그인 본체(dist)는 default export만 내보내서, enum 값은 타입 패키지에서 직접 가져온다
-import { DesiredAccuracy } from '@transistorsoft/background-geolocation-types';
+import { DesiredAccuracy, LogLevel } from '@transistorsoft/background-geolocation-types';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { insertPoint } from '../../db/points';
+import { appLog } from '../../db/logs';
+import { toLocalIso } from '../../lib/localIso';
 
 const isNative = Capacitor.isNativePlatform();
 
@@ -18,18 +20,8 @@ interface StoredLocation {
   coords: { latitude: number; longitude: number; accuracy?: number };
 }
 
-// PRD의 ts 포맷: ISO8601 + 로컬 타임존 오프셋 (예: 2026-07-17T13:33:09.000+09:00)
-function toLocalIso(epochMs: number): string {
-  const d = new Date(epochMs);
-  const offsetMin = -d.getTimezoneOffset();
-  const sign = offsetMin >= 0 ? '+' : '-';
-  const abs = Math.abs(offsetMin);
-  const pad = (n: number, w = 2) => String(n).padStart(w, '0');
-  return (
-    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
-    `T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)}` +
-    `${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`
-  );
+function errMsg(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
 }
 
 export function useCollector(onPointSaved: () => void) {
@@ -57,7 +49,8 @@ export function useCollector(onPointSaved: () => void) {
       }
       if (records.length > 0) onPointSaved();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errMsg(e));
+      void appLog('error', 'drain', errMsg(e));
     } finally {
       drainingRef.current = false;
     }
@@ -68,11 +61,16 @@ export function useCollector(onPointSaved: () => void) {
 
     const locationSub = BackgroundGeolocation.onLocation(
       () => void drain(),
-      (err) => setError(`위치 오류 코드 ${err}`),
+      (err) => {
+        setError(`위치 오류 코드 ${err}`);
+        void appLog('error', 'onLocation', `위치 오류 코드 ${err}`);
+      },
     );
     // 정지 상태에선 플러그인이 GPS를 쉬므로, 앱이 살아있는 동안엔 heartbeat로 1분 간격을 유지
     const heartbeatSub = BackgroundGeolocation.onHeartbeat(() => {
-      BackgroundGeolocation.getCurrentPosition({ samples: 1, persist: true, timeout: 30 }).catch(() => {});
+      BackgroundGeolocation.getCurrentPosition({ samples: 1, persist: true, timeout: 30 }).catch(
+        (e) => void appLog('warn', 'heartbeat', `위치 요청 실패: ${errMsg(e)}`),
+      );
     });
 
     BackgroundGeolocation.ready({
@@ -89,12 +87,17 @@ export function useCollector(onPointSaved: () => void) {
         startOnBoot: true, // 재부팅 후 자동 재개
         notification: { title: '위치 수집 중', text: '이동 기록을 저장하고 있습니다.' },
       },
+      // 플러그인 네이티브 로그(서비스 생존·권한·위치 요청 내부)를 SQLite에 남긴다 — 로그 화면에서 공유 가능
+      logger: { logLevel: LogLevel.Verbose, logMaxDays: 3 },
     })
       .then((state) => {
         setIsCollecting(state.enabled);
         if (state.enabled) void drain(); // 앱이 꺼져 있던 동안의 백로그 회수
       })
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+      .catch((e) => {
+        setError(errMsg(e));
+        void appLog('error', 'ready', errMsg(e));
+      });
 
     return () => {
       locationSub.remove();
@@ -116,14 +119,17 @@ export function useCollector(onPointSaved: () => void) {
 
       await BackgroundGeolocation.start();
       setIsCollecting(true);
+      void appLog('info', 'collector', '수집 시작');
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errMsg(e));
+      void appLog('error', 'start', errMsg(e));
     }
   }
 
   async function stop() {
     if (isNative) await BackgroundGeolocation.stop();
     setIsCollecting(false);
+    void appLog('info', 'collector', '수집 중지');
   }
 
   return { isCollecting, error, start, stop };

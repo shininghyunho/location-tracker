@@ -4,6 +4,7 @@ import { useCollector } from './features/collector/useCollector';
 import { useDayTimeline } from './features/stays/useDayTimeline';
 import { MapView } from './features/map/MapView';
 import { exportData } from './features/export/exportData';
+import { LogPanel } from './features/logs/LogPanel';
 import { countPoints } from './db/points';
 
 function localDateStr(d: Date): string {
@@ -46,6 +47,7 @@ function App() {
     refetchInterval: 30_000,
   });
 
+  const [showLogs, setShowLogs] = useState(false);
   const [exporting, setExporting] = useState(false);
   const onExport = async () => {
     setExporting(true);
@@ -136,16 +138,27 @@ function App() {
 
       <footer className="mt-auto flex items-center justify-between pb-2 text-xs text-slate-400">
         <span>누적 points {total.toLocaleString()}</span>
-        <button
-          type="button"
-          onClick={onExport}
-          disabled={exporting}
-          className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-600 disabled:text-slate-300"
-        >
-          {exporting ? '백업 중…' : '백업'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setShowLogs(true)}
+            className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-600"
+          >
+            로그
+          </button>
+          <button
+            type="button"
+            onClick={onExport}
+            disabled={exporting}
+            className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-600 disabled:text-slate-300"
+          >
+            {exporting ? '백업 중…' : '백업'}
+          </button>
+        </div>
         <span>{isCollecting ? '수집 중 (1분 간격)' : '수집 꺼짐'}</span>
       </footer>
+
+      {showLogs && <LogPanel onClose={() => setShowLogs(false)} />}
     </div>
   );
 }

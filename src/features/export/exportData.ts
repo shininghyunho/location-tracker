@@ -3,12 +3,18 @@ import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { getAllPoints } from '../../db/points';
 import { getAllStays } from '../../db/stays';
+import { getAllLogs } from '../../db/logs';
 
-// U7 확정 포맷: JSON Lines — 한 줄이 레코드 하나, type 필드로 point/stay 구분
-function buildJsonl(points: Awaited<ReturnType<typeof getAllPoints>>, stays: Awaited<ReturnType<typeof getAllStays>>): string {
+// U7 확정 포맷: JSON Lines — 한 줄이 레코드 하나, type 필드로 point/stay/log 구분
+function buildJsonl(
+  points: Awaited<ReturnType<typeof getAllPoints>>,
+  stays: Awaited<ReturnType<typeof getAllStays>>,
+  logs: Awaited<ReturnType<typeof getAllLogs>>,
+): string {
   const lines = [
     ...points.map(({ id: _id, ...p }) => JSON.stringify({ type: 'point', ...p })),
     ...stays.map(({ id: _id, ...s }) => JSON.stringify({ type: 'stay', ...s })),
+    ...logs.map(({ id: _id, ...l }) => JSON.stringify({ type: 'log', ...l })),
   ];
   return lines.join('\n') + '\n';
 }
@@ -25,8 +31,8 @@ export interface ExportResult {
 }
 
 export async function exportData(): Promise<ExportResult> {
-  const [points, stays] = await Promise.all([getAllPoints(), getAllStays()]);
-  const jsonl = buildJsonl(points, stays);
+  const [points, stays, logs] = await Promise.all([getAllPoints(), getAllStays(), getAllLogs()]);
+  const jsonl = buildJsonl(points, stays, logs);
   const fileName = exportFileName();
 
   if (Capacitor.isNativePlatform()) {
