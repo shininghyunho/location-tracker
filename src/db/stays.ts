@@ -68,6 +68,21 @@ export async function getStaysByDate(date: string): Promise<Stay[]> {
   return (res.values ?? []) as Stay[];
 }
 
+// 기간과 겹치는 stay 전부 — 경계에 걸친 체류 포함(통계 설계 §3). toTs는 배타
+export async function getStaysByRange(fromTs: string, toTs: string): Promise<Stay[]> {
+  if (!isNative) {
+    return webStays
+      .filter((s) => !s.deleted && s.end_ts >= fromTs && s.start_ts < toTs)
+      .sort((a, b) => (a.start_ts < b.start_ts ? -1 : 1));
+  }
+  const db = await getDb();
+  const res = await db.query(
+    'SELECT * FROM stays WHERE deleted = 0 AND end_ts >= ? AND start_ts < ? ORDER BY start_ts',
+    [fromTs, toTs],
+  );
+  return (res.values ?? []) as Stay[];
+}
+
 export async function deleteStay(id: number): Promise<void> {
   if (!isNative) {
     const target = webStays.find((s) => s.id === id);
