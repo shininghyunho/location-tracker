@@ -10,7 +10,7 @@ import {
   todayStr,
 } from './period';
 import type { PeriodUnit } from './period';
-import { computeStats } from './computeStats';
+import { computeStats, UNLABELED } from './computeStats';
 
 const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
 
@@ -75,21 +75,27 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
   });
   const stats = useMemo(() => computeStats(stays, fromTs, toTs), [stays, fromTs, toTs]);
 
-  const topDuration = stats.places[0]?.durationMs ?? 0;
+  // 색·요일 상위 자리는 라벨된 장소에만 — 이름 없는 장소(합산 묶음)는 회색·'기타' 취급
+  const labeled = stats.places.filter((p) => p.key !== UNLABELED);
+  const topDuration = stats.places.reduce((max, p) => Math.max(max, p.durationMs), 0);
   const colorOf = (key: string) => {
-    const idx = stats.places.findIndex((p) => p.key === key);
+    if (key === UNLABELED) return ETC_COLOR;
+    const idx = labeled.findIndex((p) => p.key === key);
     return idx >= 0 && idx < PLACE_COLORS.length ? PLACE_COLORS[idx] : ETC_COLOR;
   };
 
   // 요일 스택: 상위 장소는 각자 색 구간, 그 외는 '기타'로 합산(설계 §2)
   const weekdayBars = useMemo(() => {
-    const tops = stats.places.slice(0, PLACE_COLORS.length).map((p) => p.key);
+    const tops = stats.places
+      .filter((p) => p.key !== UNLABELED)
+      .slice(0, PLACE_COLORS.length)
+      .map((p) => p.key);
     return Array.from({ length: 7 }, (_, w) => {
       const segs = tops
         .map((key) => ({ key, ms: stats.weekdayByPlace[key]?.[w] ?? 0 }))
         .filter((seg) => seg.ms > 0);
       const etc = stats.places
-        .slice(PLACE_COLORS.length)
+        .filter((p) => !tops.includes(p.key))
         .reduce((sum, p) => sum + (stats.weekdayByPlace[p.key]?.[w] ?? 0), 0);
       if (etc > 0) segs.push({ key: '기타', ms: etc });
       return { segs, total: segs.reduce((sum, seg) => sum + seg.ms, 0) };
@@ -148,7 +154,9 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
             {stats.places.map((p) => (
               <li key={p.key} onClick={() => setExpanded(expanded === p.key ? null : p.key)}>
                 <div className="flex items-baseline justify-between text-sm">
-                  <span className="font-semibold text-slate-900">{p.key}</span>
+                  <span className={`font-semibold ${p.key === UNLABELED ? 'text-slate-400' : 'text-slate-900'}`}>
+                    {p.key}
+                  </span>
                   <span className="text-slate-500">
                     {fmtDur(p.durationMs)} · {p.visitCount}회
                   </span>
@@ -190,13 +198,13 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
             ))}
           </div>
           <div className="flex flex-wrap gap-2 pt-2 text-[10px] text-slate-500">
-            {stats.places.slice(0, PLACE_COLORS.length).map((p) => (
+            {labeled.slice(0, PLACE_COLORS.length).map((p) => (
               <span key={p.key} className="flex items-center gap-1">
                 <span className={`h-2 w-2 rounded-sm ${colorOf(p.key)}`} />
                 {p.key}
               </span>
             ))}
-            {stats.places.length > PLACE_COLORS.length && (
+            {stats.places.length > Math.min(labeled.length, PLACE_COLORS.length) && (
               <span className="flex items-center gap-1">
                 <span className={`h-2 w-2 rounded-sm ${ETC_COLOR}`} />
                 기타

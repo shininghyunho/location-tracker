@@ -84,7 +84,11 @@ export function computeStats(stays: Stay[], fromTs: string, toTs: string): Stats
   }
 
   return {
-    places: [...acc.values()].sort((a, b) => b.durationMs - a.durationMs),
+    // 이름 없는 장소는 여러 장소의 합산이라 순위가 과장됨 — 항상 맨 아래 고정
+    places: [...acc.values()].sort(
+      (a, b) =>
+        Number(a.key === UNLABELED) - Number(b.key === UNLABELED) || b.durationMs - a.durationMs,
+    ),
     weekdayByPlace,
     heatmap,
     move,
