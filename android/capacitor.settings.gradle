@@ -2,9 +2,6 @@
 include ':capacitor-android'
 project(':capacitor-android').projectDir = new File('../node_modules/@capacitor/android/capacitor')
 
-include ':capacitor-community-background-geolocation'
-project(':capacitor-community-background-geolocation').projectDir = new File('../node_modules/@capacitor-community/background-geolocation/android')
-
 include ':capacitor-community-sqlite'
 project(':capacitor-community-sqlite').projectDir = new File('../node_modules/@capacitor-community/sqlite/android')
 
@@ -16,3 +13,6 @@ project(':capacitor-local-notifications').projectDir = new File('../node_modules
 
 include ':capacitor-share'
 project(':capacitor-share').projectDir = new File('../node_modules/@capacitor/share/android')
+
+include ':transistorsoft-capacitor-background-geolocation'
+project(':transistorsoft-capacitor-background-geolocation').projectDir = new File('../node_modules/@transistorsoft/capacitor-background-geolocation/android')

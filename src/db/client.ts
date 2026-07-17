@@ -13,6 +13,11 @@ CREATE TABLE IF NOT EXISTS points (
 );
 CREATE INDEX IF NOT EXISTS idx_points_ts ON points (ts);
 
+-- 수집 엔진이 같은 GPS 픽스를 레코드 2개로 줄 때가 있어 (ts, source)를 유일하게 유지한다.
+-- 유니크 인덱스 생성 전에 기존 중복부터 정리해야 해서 DELETE가 먼저다.
+DELETE FROM points WHERE id NOT IN (SELECT MIN(id) FROM points GROUP BY ts, source);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_points_ts_source ON points (ts, source);
+
 CREATE TABLE IF NOT EXISTS stays (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   start_ts TEXT NOT NULL,

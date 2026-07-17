@@ -18,12 +18,13 @@ const webPoints: Point[] = [];
 
 export async function insertPoint(p: NewPoint): Promise<void> {
   if (!isNative) {
+    if (webPoints.some((w) => w.ts === p.ts && w.source === p.source)) return;
     webPoints.push({ ...p, id: webPoints.length + 1 });
     return;
   }
   const db = await getDb();
   await db.run(
-    'INSERT INTO points (ts, lat, lng, accuracy_m, source) VALUES (?, ?, ?, ?, ?)',
+    'INSERT OR IGNORE INTO points (ts, lat, lng, accuracy_m, source) VALUES (?, ?, ?, ?, ?)',
     [p.ts, p.lat, p.lng, p.accuracy_m, p.source],
   );
 }
