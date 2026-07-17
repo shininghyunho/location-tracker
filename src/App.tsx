@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCollector } from './features/collector/useCollector';
 import { useDayTimeline } from './features/stays/useDayTimeline';
@@ -6,6 +7,9 @@ import { MapView } from './features/map/MapView';
 import { exportData } from './features/export/exportData';
 import { LogPanel } from './features/logs/LogPanel';
 import { LabelSheet } from './features/stays/LabelSheet';
+import { importTimeline } from './features/import/importTimeline';
+import type { ImportProgress } from './features/import/importTimeline';
+import { appLog } from './db/logs';
 import { deleteStay } from './db/stays';
 import type { Stay } from './db/stays';
 import { countPoints } from './db/points';
@@ -81,6 +85,27 @@ function App() {
     setSelected(null);
     invalidate();
   };
+  const [importing, setImporting] = useState<ImportProgress | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const onImportFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // 같은 파일을 다시 선택해도 change 이벤트가 뜨도록 초기화
+    if (!file) return;
+    setImporting({ done: 0, total: 0 });
+    try {
+      const r = await importTimeline(file, setImporting);
+      invalidate();
+      window.alert(
+        `가져오기 완료: 위치 ${r.pointCount.toLocaleString()}건 · 체류 ${r.stayCount.toLocaleString()}건 추가`,
+      );
+    } catch (err) {
+      await appLog('error', 'import', String(err));
+      window.alert('가져오기 실패 — 파일 형식을 확인해주세요');
+    } finally {
+      setImporting(null);
+    }
+  };
+
   const [exporting, setExporting] = useState(false);
   const onExport = async () => {
     setExporting(true);
@@ -223,6 +248,25 @@ function App() {
       <footer className="mt-auto flex items-center justify-between pb-2 text-xs text-slate-400">
         <span>누적 points {total.toLocaleString()}</span>
         <div className="flex gap-2">
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={onImportFile}
+          />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={importing !== null}
+            className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-600 disabled:text-slate-300"
+          >
+            {importing
+              ? importing.total
+                ? `${Math.round((importing.done / importing.total) * 100)}%`
+                : '가져오는 중…'
+              : '가져오기'}
+          </button>
           <button
             type="button"
             onClick={() => setShowLogs(true)}
