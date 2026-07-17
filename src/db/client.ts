@@ -12,6 +12,17 @@ CREATE TABLE IF NOT EXISTS points (
   source TEXT NOT NULL CHECK (source IN ('collector', 'import'))
 );
 CREATE INDEX IF NOT EXISTS idx_points_ts ON points (ts);
+
+CREATE TABLE IF NOT EXISTS stays (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  start_ts TEXT NOT NULL,
+  end_ts TEXT NOT NULL,
+  lat REAL NOT NULL,
+  lng REAL NOT NULL,
+  label TEXT,
+  source TEXT NOT NULL CHECK (source IN ('collector', 'import'))
+);
+CREATE INDEX IF NOT EXISTS idx_stays_start_ts ON stays (start_ts);
 `;
 
 const sqlite = new SQLiteConnection(CapacitorSQLite);
