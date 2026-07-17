@@ -1,5 +1,7 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCollector } from './features/collector/useCollector';
 import { useDayTimeline } from './features/stays/useDayTimeline';
@@ -62,6 +64,38 @@ function App() {
   const [selected, setSelected] = useState<Stay | null>(null);
   const [ongoingSelected, setOngoingSelected] = useState(false);
   const cardRefs = useRef(new Map<number, HTMLLIElement>());
+
+  // Android 하드웨어 뒤로가기: 열린 오버레이를 위에서부터 닫고, 없으면 종료 대신 백그라운드로
+  const closeTopOverlay = () => {
+    if (labelTarget) {
+      setLabelTarget(null);
+      return true;
+    }
+    if (showStats) {
+      setShowStats(false);
+      return true;
+    }
+    if (showLogs) {
+      setShowLogs(false);
+      return true;
+    }
+    if (menuOpen) {
+      setMenuOpen(false);
+      return true;
+    }
+    return false;
+  };
+  const closeTopRef = useRef(closeTopOverlay);
+  closeTopRef.current = closeTopOverlay;
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const sub = CapApp.addListener('backButton', () => {
+      if (!closeTopRef.current()) CapApp.minimizeApp();
+    });
+    return () => {
+      sub.then((s) => s.remove());
+    };
+  }, []);
 
   // 날짜를 옮기면 이전 날짜의 선택이 남지 않게 함께 해제한다
   const changeDate = (d: string) => {

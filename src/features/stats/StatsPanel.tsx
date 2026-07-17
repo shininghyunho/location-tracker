@@ -105,15 +105,16 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-[1100] flex flex-col bg-slate-50 p-4">
-      <header className="flex items-center justify-between pb-3 pt-6">
-        <h2 className="text-lg font-bold text-slate-900">통계</h2>
+      <header className="flex items-center gap-2 pb-3 pt-6">
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700"
+          aria-label="뒤로"
+          className="rounded-md px-2 py-1 text-xl text-slate-600"
         >
-          닫기
+          ←
         </button>
+        <h2 className="text-lg font-bold text-slate-900">통계</h2>
       </header>
 
       <div className="flex items-center justify-between rounded-lg bg-white p-2 shadow-sm">
