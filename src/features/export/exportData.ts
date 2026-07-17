@@ -16,7 +16,7 @@ function buildJsonl(points: Awaited<ReturnType<typeof getAllPoints>>, stays: Awa
 function exportFileName(): string {
   const d = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `tracker-export-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.jsonl`;
+  return `tracker-backup-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.jsonl`;
 }
 
 export interface ExportResult {

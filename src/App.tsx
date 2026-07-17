@@ -142,7 +142,7 @@ function App() {
           disabled={exporting}
           className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-600 disabled:text-slate-300"
         >
-          {exporting ? '내보내는 중…' : '내보내기'}
+          {exporting ? '백업 중…' : '백업'}
         </button>
         <span>{isCollecting ? '수집 중 (1분 간격)' : '수집 꺼짐'}</span>
       </footer>
