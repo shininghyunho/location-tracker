@@ -10,9 +10,11 @@ export interface Stay {
   lng: number;
   label: string | null;
   source: 'collector' | 'import';
+  // soft delete(0/1) — 행을 지우면 증분 커서가 뒤로 밀려 최신 stay가 재판정으로 부활한다
+  deleted: number;
 }
 
-export type NewStay = Omit<Stay, 'id'>;
+export type NewStay = Omit<Stay, 'id' | 'deleted'>;
 
 // 웹 브라우저(npm run dev)에서는 SQLite 플러그인이 없으므로 메모리 배열로 대체한다
 const isNative = Capacitor.isNativePlatform();
@@ -20,7 +22,7 @@ const webStays: Stay[] = [];
 
 export async function insertStay(s: NewStay): Promise<void> {
   if (!isNative) {
-    webStays.push({ ...s, id: webStays.length + 1 });
+    webStays.push({ ...s, id: webStays.length + 1, deleted: 0 });
     return;
   }
   const db = await getDb();
@@ -30,7 +32,8 @@ export async function insertStay(s: NewStay): Promise<void> {
   );
 }
 
-// 증분 판정의 커서 — 이 시각 이후의 points만 다시 판정하면 된다
+// 증분 판정의 커서 — 이 시각 이후의 points만 다시 판정하면 된다.
+// deleted도 포함해야 한다 — 지운 stay를 빼면 커서가 뒤로 밀려 그 stay가 재판정으로 부활한다
 export async function getLastCollectorStayEnd(): Promise<string | null> {
   if (!isNative) {
     const ends = webStays.filter((s) => s.source === 'collector').map((s) => s.end_ts);
@@ -42,9 +45,11 @@ export async function getLastCollectorStayEnd(): Promise<string | null> {
 }
 
 export async function getAllStays(): Promise<Stay[]> {
-  if (!isNative) return [...webStays].sort((a, b) => (a.start_ts < b.start_ts ? -1 : 1));
+  if (!isNative) {
+    return webStays.filter((s) => !s.deleted).sort((a, b) => (a.start_ts < b.start_ts ? -1 : 1));
+  }
   const db = await getDb();
-  const res = await db.query('SELECT * FROM stays ORDER BY start_ts');
+  const res = await db.query('SELECT * FROM stays WHERE deleted = 0 ORDER BY start_ts');
   return (res.values ?? []) as Stay[];
 }
 
@@ -52,15 +57,25 @@ export async function getAllStays(): Promise<Stay[]> {
 export async function getStaysByDate(date: string): Promise<Stay[]> {
   if (!isNative) {
     return webStays
-      .filter((s) => s.start_ts.startsWith(date))
+      .filter((s) => !s.deleted && s.start_ts.startsWith(date))
       .sort((a, b) => (a.start_ts < b.start_ts ? -1 : 1));
   }
   const db = await getDb();
   const res = await db.query(
-    'SELECT * FROM stays WHERE substr(start_ts, 1, 10) = ? ORDER BY start_ts',
+    'SELECT * FROM stays WHERE deleted = 0 AND substr(start_ts, 1, 10) = ? ORDER BY start_ts',
     [date],
   );
   return (res.values ?? []) as Stay[];
+}
+
+export async function deleteStay(id: number): Promise<void> {
+  if (!isNative) {
+    const target = webStays.find((s) => s.id === id);
+    if (target) target.deleted = 1;
+    return;
+  }
+  const db = await getDb();
+  await db.run('UPDATE stays SET deleted = 1 WHERE id = ?', [id]);
 }
 
 // F5 라벨 매칭 반경 — 체류판정과 같은 설정값을 공유한다

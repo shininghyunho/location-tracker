@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCollector } from './features/collector/useCollector';
 import { useDayTimeline } from './features/stays/useDayTimeline';
@@ -6,6 +6,7 @@ import { MapView } from './features/map/MapView';
 import { exportData } from './features/export/exportData';
 import { LogPanel } from './features/logs/LogPanel';
 import { LabelSheet } from './features/stays/LabelSheet';
+import { deleteStay } from './db/stays';
 import type { Stay } from './db/stays';
 import { countPoints } from './db/points';
 
@@ -38,7 +39,7 @@ function App() {
   const { isCollecting, error, start, stop } = useCollector(invalidate);
 
   const { data } = useDayTimeline(date);
-  const stays = data?.stays ?? [];
+  const stays = useMemo(() => data?.stays ?? [], [data]);
   const points = data?.points ?? [];
   // 진행 중 클러스터는 아직 저장 전이라 별도 표시 — 오늘 화면에서만 의미가 있다
   const ongoing = date === today ? (data?.ongoing ?? null) : null;
@@ -51,6 +52,28 @@ function App() {
 
   const [showLogs, setShowLogs] = useState(false);
   const [labelTarget, setLabelTarget] = useState<Stay | null>(null);
+  const [selected, setSelected] = useState<Stay | null>(null);
+  const cardRefs = useRef(new Map<number, HTMLLIElement>());
+
+  // 날짜를 옮기면 이전 날짜의 선택이 남지 않게 함께 해제한다
+  const changeDate = (d: string) => {
+    setSelected(null);
+    setDate(d);
+  };
+
+  const onStayTap = (id: number) => {
+    const stay = stays.find((s) => s.id === id);
+    if (!stay) return;
+    setSelected(stay);
+    cardRefs.current.get(id)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  const onDelete = async (s: Stay) => {
+    if (!window.confirm('이 체류 기록을 삭제할까요?')) return;
+    await deleteStay(s.id);
+    setSelected(null);
+    invalidate();
+  };
   const [exporting, setExporting] = useState(false);
   const onExport = async () => {
     setExporting(true);
@@ -63,10 +86,15 @@ function App() {
     }
   };
 
-  const stayMarkers = [
-    ...stays.map((s) => ({ lat: s.lat, lng: s.lng })),
-    ...(ongoing ? [{ lat: ongoing.lat, lng: ongoing.lng }] : []),
-  ];
+  // 선택으로 리렌더될 때 참조가 바뀌면 MapView가 전체 범위로 다시 fitBounds 해버린다 — memoize 필수
+  const stayMarkers = useMemo(
+    () => [
+      ...stays.map((s) => ({ id: s.id, lat: s.lat, lng: s.lng })),
+      ...(ongoing ? [{ id: null, lat: ongoing.lat, lng: ongoing.lng }] : []),
+    ],
+    [stays, ongoing],
+  );
+  const focus = useMemo(() => (selected ? { lat: selected.lat, lng: selected.lng } : null), [selected]);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col gap-3 bg-slate-50 p-4">
@@ -86,16 +114,16 @@ function App() {
       {error && <p className="rounded-lg bg-red-100 p-3 text-sm text-red-700">{error}</p>}
 
       <div className="flex items-center justify-between rounded-lg bg-white p-2 shadow-sm">
-        <button type="button" onClick={() => setDate(addDays(date, -1))} className="px-4 py-1 text-lg text-slate-600">
+        <button type="button" onClick={() => changeDate(addDays(date, -1))} className="px-4 py-1 text-lg text-slate-600">
           ◀
         </button>
-        <button type="button" onClick={() => setDate(today)} className="text-sm font-semibold text-slate-900">
+        <button type="button" onClick={() => changeDate(today)} className="text-sm font-semibold text-slate-900">
           {date}
           {date === today && <span className="ml-1 text-blue-600">(오늘)</span>}
         </button>
         <button
           type="button"
-          onClick={() => setDate(addDays(date, 1))}
+          onClick={() => changeDate(addDays(date, 1))}
           disabled={date >= today}
           className="px-4 py-1 text-lg text-slate-600 disabled:text-slate-300"
         >
@@ -103,14 +131,20 @@ function App() {
         </button>
       </div>
 
-      <MapView trackPoints={points} stays={stayMarkers} />
+      <MapView trackPoints={points} stays={stayMarkers} focus={focus} onStayTap={onStayTap} />
 
       <ul className="flex flex-col gap-2">
         {stays.map((s) => (
           <li
             key={s.id}
-            onClick={() => setLabelTarget(s)}
-            className="rounded-lg bg-white p-3 shadow-sm active:bg-slate-100"
+            ref={(el) => {
+              if (el) cardRefs.current.set(s.id, el);
+              else cardRefs.current.delete(s.id);
+            }}
+            onClick={() => setSelected(selected?.id === s.id ? null : s)}
+            className={`rounded-lg bg-white p-3 shadow-sm active:bg-slate-100 ${
+              selected?.id === s.id ? 'ring-2 ring-blue-500' : ''
+            }`}
           >
             <div className="flex items-baseline justify-between">
               <span className="font-semibold text-slate-900">{s.label ?? '이름 없는 장소'}</span>
@@ -122,6 +156,30 @@ function App() {
             <div className="text-xs text-slate-400">
               {s.lat.toFixed(5)}, {s.lng.toFixed(5)}
             </div>
+            {selected?.id === s.id && (
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLabelTarget(s);
+                  }}
+                  className="flex-1 rounded-md bg-blue-50 py-2 text-sm font-semibold text-blue-700"
+                >
+                  수정
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(s);
+                  }}
+                  className="flex-1 rounded-md bg-red-50 py-2 text-sm font-semibold text-red-600"
+                >
+                  삭제
+                </button>
+              </div>
+            )}
           </li>
         ))}
 

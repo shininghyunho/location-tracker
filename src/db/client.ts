@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS stays (
   lat REAL NOT NULL,
   lng REAL NOT NULL,
   label TEXT,
-  source TEXT NOT NULL CHECK (source IN ('collector', 'import'))
+  source TEXT NOT NULL CHECK (source IN ('collector', 'import')),
+  deleted INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_stays_start_ts ON stays (start_ts);
 `;
@@ -50,6 +51,8 @@ export function getDb(): Promise<SQLiteDBConnection> {
     const db = await sqlite.createConnection(DB_NAME, false, 'no-encryption', 1, false);
     await db.open();
     await db.execute(SCHEMA);
+    // 기존 설치 DB 마이그레이션 — 컬럼이 이미 있으면 에러가 나므로 무시한다
+    await db.execute('ALTER TABLE stays ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0').catch(() => {});
     return db;
   })();
   return dbPromise;
