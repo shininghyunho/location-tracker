@@ -109,6 +109,40 @@ export async function getNearbyLabels(lat: number, lng: number): Promise<string[
   return [...new Set(labels)];
 }
 
+// F6 배치 삽입 — batchInsertPoints와 같은 구조. 행당 바인드 6개 × 150 = 900 ≤ 999.
+// 웹 중복 검사가 deleted 포함 전체를 보는 것이 의도 — 지운 stay가 재-import로 부활하면 안 된다
+const CHUNK = 150;
+
+export async function batchInsertStays(
+  stays: NewStay[],
+  onChunk?: (n: number) => void,
+): Promise<number> {
+  let inserted = 0;
+  if (!isNative) {
+    for (const s of stays) {
+      if (!webStays.some((w) => w.start_ts === s.start_ts && w.source === s.source)) {
+        webStays.push({ ...s, id: webStays.length + 1, deleted: 0 });
+        inserted++;
+      }
+    }
+    onChunk?.(stays.length);
+    return inserted;
+  }
+  const db = await getDb();
+  for (let i = 0; i < stays.length; i += CHUNK) {
+    const chunk = stays.slice(i, i + CHUNK);
+    const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, ?)').join(', ');
+    const values = chunk.flatMap((s) => [s.start_ts, s.end_ts, s.lat, s.lng, s.label, s.source]);
+    const res = await db.run(
+      `INSERT OR IGNORE INTO stays (start_ts, end_ts, lat, lng, label, source) VALUES ${placeholders}`,
+      values,
+    );
+    inserted += res.changes?.changes ?? 0;
+    onChunk?.(chunk.length);
+  }
+  return inserted;
+}
+
 export async function relabelNearbyUnlabeled(lat: number, lng: number, label: string): Promise<void> {
   const targets = (await getAllStays()).filter(
     (s) => s.label === null && haversineM(lat, lng, s.lat, s.lng) <= labelRadiusM,

@@ -65,6 +65,52 @@ export async function getAllPoints(): Promise<Point[]> {
   return (res.values ?? []) as Point[];
 }
 
+// F6 배치 삽입 청크 — 행당 바인드 5개 × 150 = 750, SQLite 한도(999) 이내
+const CHUNK = 150;
+
+// import 대량 삽입 — 건당 브릿지 호출은 수만 건에 수 분이 걸려 멀티로우로 묶는다.
+// 반환값은 실제 삽입 행 수(OR IGNORE로 건너뛴 기존 행 제외)
+export async function batchInsertPoints(
+  points: NewPoint[],
+  onChunk?: (n: number) => void,
+): Promise<number> {
+  let inserted = 0;
+  if (!isNative) {
+    for (const p of points) {
+      if (!webPoints.some((w) => w.ts === p.ts && w.source === p.source)) {
+        webPoints.push({ ...p, id: webPoints.length + 1 });
+        inserted++;
+      }
+    }
+    onChunk?.(points.length);
+    return inserted;
+  }
+  const db = await getDb();
+  for (let i = 0; i < points.length; i += CHUNK) {
+    const chunk = points.slice(i, i + CHUNK);
+    const placeholders = chunk.map(() => '(?, ?, ?, ?, ?)').join(', ');
+    const values = chunk.flatMap((p) => [p.ts, p.lat, p.lng, p.accuracy_m, p.source]);
+    const res = await db.run(
+      `INSERT OR IGNORE INTO points (ts, lat, lng, accuracy_m, source) VALUES ${placeholders}`,
+      values,
+    );
+    inserted += res.changes?.changes ?? 0;
+    onChunk?.(chunk.length);
+  }
+  return inserted;
+}
+
+// F6 cutoff — 첫 collector point 이전만 백필한다
+export async function getFirstCollectorPointTs(): Promise<string | null> {
+  if (!isNative) {
+    const ts = webPoints.filter((p) => p.source === 'collector').map((p) => p.ts);
+    return ts.length ? ts.sort()[0] : null;
+  }
+  const db = await getDb();
+  const res = await db.query("SELECT MIN(ts) AS first FROM points WHERE source = 'collector'");
+  return (res.values?.[0]?.first ?? null) as string | null;
+}
+
 export async function countPoints(): Promise<number> {
   if (!isNative) return webPoints.length;
   const db = await getDb();

@@ -41,6 +41,10 @@ CREATE TABLE IF NOT EXISTS stays (
   deleted INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_stays_start_ts ON stays (start_ts);
+
+-- 재-import 멱등성(F6): 같은 시각·같은 source의 stay는 하나만. 인덱스 생성 전에 기존 중복부터 정리한다.
+DELETE FROM stays WHERE id NOT IN (SELECT MIN(id) FROM stays GROUP BY start_ts, source);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_stays_start_source ON stays (start_ts, source);
 `;
 
 const sqlite = new SQLiteConnection(CapacitorSQLite);
