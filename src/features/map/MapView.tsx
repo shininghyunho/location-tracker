@@ -123,7 +123,7 @@ export function MapView({ trackPoints, stays, focus, onStayTap }: MapViewProps) 
         onClick={onMyLocation}
         disabled={locating}
         aria-label="내 위치"
-        className={`absolute bottom-2 right-2 z-[1000] rounded-full bg-white p-2.5 text-slate-700 shadow-md disabled:text-slate-300 ${
+        className={`absolute right-2 top-2 z-[1000] rounded-full bg-white p-2.5 text-slate-700 shadow-md disabled:text-slate-300 ${
           locating ? 'animate-pulse' : ''
         }`}
       >
