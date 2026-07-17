@@ -7,6 +7,7 @@ import { MapView } from './features/map/MapView';
 import { exportData } from './features/export/exportData';
 import { LogPanel } from './features/logs/LogPanel';
 import { LabelSheet } from './features/stays/LabelSheet';
+import { StatsPanel } from './features/stats/StatsPanel';
 import { importTimeline } from './features/import/importTimeline';
 import type { ImportProgress } from './features/import/importTimeline';
 import { appLog } from './db/logs';
@@ -55,6 +56,8 @@ function App() {
   });
 
   const [showLogs, setShowLogs] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [labelTarget, setLabelTarget] = useState<Stay | null>(null);
   const [selected, setSelected] = useState<Stay | null>(null);
   const [ongoingSelected, setOngoingSelected] = useState(false);
@@ -136,18 +139,87 @@ function App() {
     <div className="mx-auto flex min-h-screen max-w-md flex-col gap-3 bg-slate-50 p-4">
       <header className="flex items-center justify-between pt-6">
         <h1 className="text-xl font-bold text-slate-900">위치 트래커</h1>
-        <button
-          type="button"
-          onClick={isCollecting ? stop : start}
-          className={`rounded-lg px-4 py-2 text-sm font-semibold text-white ${
-            isCollecting ? 'bg-red-500' : 'bg-blue-600'
-          }`}
-        >
-          {isCollecting ? '수집 중지' : '수집 시작'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={isCollecting ? stop : start}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold text-white ${
+              isCollecting ? 'bg-red-500' : 'bg-blue-600'
+            }`}
+          >
+            {isCollecting ? '수집 중지' : '수집 시작'}
+          </button>
+          <div className="relative">
+            <button
+              type="button"
+              aria-label="메뉴"
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600"
+            >
+              ⚙
+            </button>
+            {menuOpen && (
+              <>
+                {/* 지도(leaflet z-index ~1000)보다 위 — 바깥 탭으로 닫기 */}
+                <div className="fixed inset-0 z-[1040]" onClick={() => setMenuOpen(false)} />
+                <div className="absolute right-0 z-[1050] mt-1 w-36 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      fileRef.current?.click();
+                    }}
+                    disabled={importing !== null}
+                    className="block w-full px-4 py-2 text-left text-sm text-slate-700 disabled:text-slate-300"
+                  >
+                    {importing ? '가져오는 중…' : '가져오기'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onExport();
+                    }}
+                    disabled={exporting}
+                    className="block w-full px-4 py-2 text-left text-sm text-slate-700 disabled:text-slate-300"
+                  >
+                    {exporting ? '내보내는 중…' : '내보내기'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setShowLogs(true);
+                    }}
+                    className="block w-full px-4 py-2 text-left text-sm text-slate-700"
+                  >
+                    로그
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setShowStats(true);
+                    }}
+                    className="block w-full px-4 py-2 text-left text-sm text-slate-700"
+                  >
+                    통계
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </header>
 
       {error && <p className="rounded-lg bg-red-100 p-3 text-sm text-red-700">{error}</p>}
+
+      {importing && (
+        <p className="rounded-lg bg-blue-100 p-3 text-sm text-blue-700">
+          가져오는 중…{' '}
+          {importing.total > 0 && `${Math.round((importing.done / importing.total) * 100)}%`}
+        </p>
+      )}
 
       <div className="flex items-center justify-between rounded-lg bg-white p-2 shadow-sm">
         <button type="button" onClick={() => changeDate(addDays(date, -1))} className="px-4 py-1 text-lg text-slate-600">
@@ -247,46 +319,19 @@ function App() {
 
       <footer className="mt-auto flex items-center justify-between pb-2 text-xs text-slate-400">
         <span>누적 points {total.toLocaleString()}</span>
-        <div className="flex gap-2">
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".json,application/json"
-            className="hidden"
-            onChange={onImportFile}
-          />
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            disabled={importing !== null}
-            className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-600 disabled:text-slate-300"
-          >
-            {importing
-              ? importing.total
-                ? `${Math.round((importing.done / importing.total) * 100)}%`
-                : '가져오는 중…'
-              : '가져오기'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowLogs(true)}
-            className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-600"
-          >
-            로그
-          </button>
-          <button
-            type="button"
-            onClick={onExport}
-            disabled={exporting}
-            className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-600 disabled:text-slate-300"
-          >
-            {exporting ? '백업 중…' : '백업'}
-          </button>
-        </div>
         <span>{isCollecting ? '수집 중 (1분 간격)' : '수집 꺼짐'}</span>
       </footer>
 
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".json,application/json"
+        className="hidden"
+        onChange={onImportFile}
+      />
+
       {showLogs && <LogPanel onClose={() => setShowLogs(false)} />}
+      {showStats && <StatsPanel onClose={() => setShowStats(false)} />}
       {labelTarget && <LabelSheet stay={labelTarget} onClose={() => setLabelTarget(null)} />}
     </div>
   );
