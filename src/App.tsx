@@ -53,18 +53,25 @@ function App() {
   const [showLogs, setShowLogs] = useState(false);
   const [labelTarget, setLabelTarget] = useState<Stay | null>(null);
   const [selected, setSelected] = useState<Stay | null>(null);
+  const [ongoingSelected, setOngoingSelected] = useState(false);
   const cardRefs = useRef(new Map<number, HTMLLIElement>());
 
   // 날짜를 옮기면 이전 날짜의 선택이 남지 않게 함께 해제한다
   const changeDate = (d: string) => {
     setSelected(null);
+    setOngoingSelected(false);
     setDate(d);
+  };
+
+  const selectStay = (s: Stay | null) => {
+    setOngoingSelected(false);
+    setSelected(s);
   };
 
   const onStayTap = (id: number) => {
     const stay = stays.find((s) => s.id === id);
     if (!stay) return;
-    setSelected(stay);
+    selectStay(stay);
     cardRefs.current.get(id)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
 
@@ -94,7 +101,11 @@ function App() {
     ],
     [stays, ongoing],
   );
-  const focus = useMemo(() => (selected ? { lat: selected.lat, lng: selected.lng } : null), [selected]);
+  const focus = useMemo(() => {
+    if (selected) return { lat: selected.lat, lng: selected.lng };
+    if (ongoingSelected && ongoing) return { lat: ongoing.lat, lng: ongoing.lng };
+    return null;
+  }, [selected, ongoingSelected, ongoing]);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col gap-3 bg-slate-50 p-4">
@@ -141,7 +152,7 @@ function App() {
               if (el) cardRefs.current.set(s.id, el);
               else cardRefs.current.delete(s.id);
             }}
-            onClick={() => setSelected(selected?.id === s.id ? null : s)}
+            onClick={() => selectStay(selected?.id === s.id ? null : s)}
             className={`rounded-lg bg-white p-3 shadow-sm active:bg-slate-100 ${
               selected?.id === s.id ? 'ring-2 ring-blue-500' : ''
             }`}
@@ -184,7 +195,15 @@ function App() {
         ))}
 
         {ongoing && (
-          <li className="rounded-lg border-2 border-blue-200 bg-white p-3 shadow-sm">
+          <li
+            onClick={() => {
+              setSelected(null);
+              setOngoingSelected(!ongoingSelected);
+            }}
+            className={`rounded-lg border-2 border-blue-200 bg-white p-3 shadow-sm active:bg-slate-100 ${
+              ongoingSelected ? 'ring-2 ring-blue-500' : ''
+            }`}
+          >
             <div className="flex items-baseline justify-between">
               <span className="font-semibold text-blue-700">지금 여기</span>
               <span className="text-sm text-slate-500">{fmtDuration(ongoing.startTs, ongoing.endTs)}째</span>

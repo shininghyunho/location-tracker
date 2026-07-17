@@ -1,4 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
+import BackgroundGeolocation from '@transistorsoft/capacitor-background-geolocation';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -21,6 +23,7 @@ interface MapViewProps {
 
 const SEOUL: L.LatLngTuple = [37.5665, 126.978];
 const FOCUS_ZOOM = 16;
+const FIT_OPTS = { padding: [24, 24] as L.PointTuple, maxZoom: 17 };
 
 export function MapView({ trackPoints, stays, focus, onStayTap }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -29,6 +32,9 @@ export function MapView({ trackPoints, stays, focus, onStayTap }: MapViewProps) 
   // 마커 클릭이 항상 최신 핸들러를 부르게 ref로 우회 — 핸들러가 바뀔 때마다 레이어를 다시 그리지 않기 위해
   const onStayTapRef = useRef(onStayTap);
   onStayTapRef.current = onStayTap;
+  // 포커스 해제 시 하루 전체 범위로 돌아가기 위해 마지막 bounds를 기억한다
+  const boundsRef = useRef<L.LatLngBounds | null>(null);
+  const hadFocusRef = useRef(false);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -71,17 +77,55 @@ export function MapView({ trackPoints, stays, focus, onStayTap }: MapViewProps) 
     }
 
     const all = [...trackPoints, ...stays];
-    if (all.length > 0) {
-      map.fitBounds(L.latLngBounds(all.map((p) => [p.lat, p.lng] as L.LatLngTuple)), {
-        padding: [24, 24],
-        maxZoom: 17,
-      });
-    }
+    boundsRef.current = all.length > 0 ? L.latLngBounds(all.map((p) => [p.lat, p.lng] as L.LatLngTuple)) : null;
+    if (boundsRef.current) map.fitBounds(boundsRef.current, FIT_OPTS);
   }, [trackPoints, stays]);
 
+  const [locating, setLocating] = useState(false);
+  const onMyLocation = async () => {
+    setLocating(true);
+    try {
+      if (Capacitor.isNativePlatform()) {
+        // persist: false — 버튼 조회로 points 데이터를 오염시키지 않는다
+        const loc = await BackgroundGeolocation.getCurrentPosition({ samples: 1, timeout: 30, persist: false });
+        mapRef.current?.flyTo([loc.coords.latitude, loc.coords.longitude], FOCUS_ZOOM);
+      } else {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10_000 }),
+        );
+        mapRef.current?.flyTo([pos.coords.latitude, pos.coords.longitude], FOCUS_ZOOM);
+      }
+    } catch {
+      // 위치 조회 실패(권한 거부·타임아웃)는 조용히 무시
+    } finally {
+      setLocating(false);
+    }
+  };
+
   useEffect(() => {
-    if (focus) mapRef.current?.setView([focus.lat, focus.lng], FOCUS_ZOOM);
+    const map = mapRef.current;
+    if (!map) return;
+    if (focus) {
+      hadFocusRef.current = true;
+      map.flyTo([focus.lat, focus.lng], FOCUS_ZOOM);
+    } else if (hadFocusRef.current) {
+      // 선택 해제 → 하루 전체 범위로 복귀 (최초 마운트 땐 발동하지 않는다)
+      hadFocusRef.current = false;
+      if (boundsRef.current) map.flyToBounds(boundsRef.current, FIT_OPTS);
+    }
   }, [focus]);
 
-  return <div ref={containerRef} className="h-64 w-full rounded-xl" />;
+  return (
+    <div className="relative">
+      <div ref={containerRef} className="h-64 w-full rounded-xl" />
+      <button
+        type="button"
+        onClick={onMyLocation}
+        disabled={locating}
+        className="absolute bottom-2 right-2 z-[1000] rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-md disabled:text-slate-300"
+      >
+        {locating ? '찾는 중…' : '내 위치'}
+      </button>
+    </div>
+  );
 }
