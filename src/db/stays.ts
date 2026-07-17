@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { getDb } from './client';
+import { DEFAULT_STAY_PARAMS, haversineM } from '../features/stays/detectStays';
 
 export interface Stay {
   id: number;
@@ -60,4 +61,42 @@ export async function getStaysByDate(date: string): Promise<Stay[]> {
     [date],
   );
   return (res.values ?? []) as Stay[];
+}
+
+// F5 라벨 매칭 반경 — 체류판정과 같은 설정값을 공유한다
+const labelRadiusM = DEFAULT_STAY_PARAMS.radiusM;
+
+export async function updateStayLabel(id: number, label: string | null): Promise<void> {
+  if (!isNative) {
+    const target = webStays.find((s) => s.id === id);
+    if (target) target.label = label;
+    return;
+  }
+  const db = await getDb();
+  await db.run('UPDATE stays SET label = ? WHERE id = ?', [label, id]);
+}
+
+// 반경 내 라벨된 stay 중 가장 가까운 것의 라벨 — 새 stay 확정 시 자동 상속용
+export async function findNearestLabel(lat: number, lng: number): Promise<string | null> {
+  let best: { label: string; dist: number } | null = null;
+  for (const s of await getAllStays()) {
+    if (s.label === null) continue;
+    const dist = haversineM(lat, lng, s.lat, s.lng);
+    if (dist <= labelRadiusM && (!best || dist < best.dist)) best = { label: s.label, dist };
+  }
+  return best?.label ?? null;
+}
+
+export async function getNearbyLabels(lat: number, lng: number): Promise<string[]> {
+  const labels = (await getAllStays())
+    .filter((s) => s.label !== null && haversineM(lat, lng, s.lat, s.lng) <= labelRadiusM)
+    .map((s) => s.label!);
+  return [...new Set(labels)];
+}
+
+export async function relabelNearbyUnlabeled(lat: number, lng: number, label: string): Promise<void> {
+  const targets = (await getAllStays()).filter(
+    (s) => s.label === null && haversineM(lat, lng, s.lat, s.lng) <= labelRadiusM,
+  );
+  for (const t of targets) await updateStayLabel(t.id, label);
 }
