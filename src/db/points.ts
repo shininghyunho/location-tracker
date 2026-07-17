@@ -57,6 +57,13 @@ export async function getPointsByDate(date: string): Promise<Point[]> {
   return (res.values ?? []) as Point[];
 }
 
+export async function getAllPoints(): Promise<Point[]> {
+  if (!isNative) return [...webPoints].sort((a, b) => (a.ts < b.ts ? -1 : 1));
+  const db = await getDb();
+  const res = await db.query('SELECT * FROM points ORDER BY ts');
+  return (res.values ?? []) as Point[];
+}
+
 export async function countPoints(): Promise<number> {
   if (!isNative) return webPoints.length;
   const db = await getDb();

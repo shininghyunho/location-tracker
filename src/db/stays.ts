@@ -40,6 +40,13 @@ export async function getLastCollectorStayEnd(): Promise<string | null> {
   return (res.values?.[0]?.last ?? null) as string | null;
 }
 
+export async function getAllStays(): Promise<Stay[]> {
+  if (!isNative) return [...webStays].sort((a, b) => (a.start_ts < b.start_ts ? -1 : 1));
+  const db = await getDb();
+  const res = await db.query('SELECT * FROM stays ORDER BY start_ts');
+  return (res.values ?? []) as Stay[];
+}
+
 // ts가 로컬 오프셋 ISO 문자열이라 날짜는 앞 10자리 비교로 충분하다
 export async function getStaysByDate(date: string): Promise<Stay[]> {
   if (!isNative) {

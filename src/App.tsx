@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCollector } from './features/collector/useCollector';
 import { useDayTimeline } from './features/stays/useDayTimeline';
 import { MapView } from './features/map/MapView';
+import { exportData } from './features/export/exportData';
 import { countPoints } from './db/points';
 
 function localDateStr(d: Date): string {
@@ -44,6 +45,18 @@ function App() {
     queryFn: countPoints,
     refetchInterval: 30_000,
   });
+
+  const [exporting, setExporting] = useState(false);
+  const onExport = async () => {
+    setExporting(true);
+    try {
+      await exportData();
+    } catch {
+      // 공유 시트를 취소해도 reject되므로 조용히 무시한다
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const stayMarkers = [
     ...stays.map((s) => ({ lat: s.lat, lng: s.lng })),
@@ -123,6 +136,14 @@ function App() {
 
       <footer className="mt-auto flex items-center justify-between pb-2 text-xs text-slate-400">
         <span>누적 points {total.toLocaleString()}</span>
+        <button
+          type="button"
+          onClick={onExport}
+          disabled={exporting}
+          className="rounded-md border border-slate-300 px-3 py-1 font-semibold text-slate-600 disabled:text-slate-300"
+        >
+          {exporting ? '내보내는 중…' : '내보내기'}
+        </button>
         <span>{isCollecting ? '수집 중 (1분 간격)' : '수집 꺼짐'}</span>
       </footer>
     </div>
