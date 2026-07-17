@@ -5,6 +5,8 @@ import { useDayTimeline } from './features/stays/useDayTimeline';
 import { MapView } from './features/map/MapView';
 import { exportData } from './features/export/exportData';
 import { LogPanel } from './features/logs/LogPanel';
+import { LabelSheet } from './features/stays/LabelSheet';
+import type { Stay } from './db/stays';
 import { countPoints } from './db/points';
 
 function localDateStr(d: Date): string {
@@ -48,6 +50,7 @@ function App() {
   });
 
   const [showLogs, setShowLogs] = useState(false);
+  const [labelTarget, setLabelTarget] = useState<Stay | null>(null);
   const [exporting, setExporting] = useState(false);
   const onExport = async () => {
     setExporting(true);
@@ -104,7 +107,11 @@ function App() {
 
       <ul className="flex flex-col gap-2">
         {stays.map((s) => (
-          <li key={s.id} className="rounded-lg bg-white p-3 shadow-sm">
+          <li
+            key={s.id}
+            onClick={() => setLabelTarget(s)}
+            className="rounded-lg bg-white p-3 shadow-sm active:bg-slate-100"
+          >
             <div className="flex items-baseline justify-between">
               <span className="font-semibold text-slate-900">{s.label ?? '이름 없는 장소'}</span>
               <span className="text-sm text-slate-500">{fmtDuration(s.start_ts, s.end_ts)}</span>
@@ -159,6 +166,7 @@ function App() {
       </footer>
 
       {showLogs && <LogPanel onClose={() => setShowLogs(false)} />}
+      {labelTarget && <LabelSheet stay={labelTarget} onClose={() => setLabelTarget(null)} />}
     </div>
   );
 }
