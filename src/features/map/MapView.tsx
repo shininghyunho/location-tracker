@@ -116,7 +116,8 @@ export function MapView({ trackPoints, stays, focus, onStayTap }: MapViewProps) 
   }, [focus]);
 
   return (
-    <div className="relative">
+    // 페인트 격리 — Android WebView가 leaflet 변환 레이어 탓에 스크롤 밖 영역을 백화시키는 문제 방지
+    <div className="relative [contain:paint] [transform:translateZ(0)]">
       <div ref={containerRef} className="h-64 w-full rounded-xl" />
       <button
         type="button"
