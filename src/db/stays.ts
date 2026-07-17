@@ -117,6 +117,33 @@ export async function findNearestLabel(lat: number, lng: number): Promise<string
   return best?.label ?? null;
 }
 
+// 라벨별 대표 좌표(평균) — stay마다 중심점이 산포해 같은 장소가 지도에 여러 곳으로 찍히는 것을 표시 단계에서 스냅
+export async function getLabelCoords(): Promise<Record<string, { lat: number; lng: number }>> {
+  if (!isNative) {
+    const acc: Record<string, { lat: number; lng: number; n: number }> = {};
+    for (const s of webStays) {
+      if (s.deleted || s.label === null) continue;
+      const a = (acc[s.label] ??= { lat: 0, lng: 0, n: 0 });
+      a.lat += s.lat;
+      a.lng += s.lng;
+      a.n++;
+    }
+    return Object.fromEntries(
+      Object.entries(acc).map(([k, v]) => [k, { lat: v.lat / v.n, lng: v.lng / v.n }]),
+    );
+  }
+  const db = await getDb();
+  const res = await db.query(
+    'SELECT label, AVG(lat) AS lat, AVG(lng) AS lng FROM stays WHERE deleted = 0 AND label IS NOT NULL GROUP BY label',
+  );
+  return Object.fromEntries(
+    ((res.values ?? []) as { label: string; lat: number; lng: number }[]).map((r) => [
+      r.label,
+      { lat: r.lat, lng: r.lng },
+    ]),
+  );
+}
+
 export async function getNearbyLabels(lat: number, lng: number): Promise<string[]> {
   const labels = (await getAllStays())
     .filter((s) => s.label !== null && haversineM(lat, lng, s.lat, s.lng) <= labelRadiusM)

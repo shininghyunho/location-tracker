@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
@@ -13,7 +13,7 @@ import { StatsPanel } from './features/stats/StatsPanel';
 import { importTimeline } from './features/import/importTimeline';
 import type { ImportProgress } from './features/import/importTimeline';
 import { appLog } from './db/logs';
-import { deleteStay } from './db/stays';
+import { deleteStay, getLabelCoords } from './db/stays';
 import type { Stay } from './db/stays';
 import { countPoints } from './db/points';
 
@@ -56,6 +56,17 @@ function App() {
     queryFn: countPoints,
     refetchInterval: 30_000,
   });
+
+  // 같은 라벨은 항상 대표 좌표 한 점에 표시 — stay별 중심점 산포로 한 장소가 지도에 여러 곳으로 찍히는 것 방지
+  const { data: labelCoords = {} } = useQuery({
+    queryKey: ['timeline', 'labelCoords'],
+    queryFn: getLabelCoords,
+  });
+  const snapCoord = useCallback(
+    (s: Stay): { lat: number; lng: number } =>
+      (s.label ? labelCoords[s.label] : undefined) ?? { lat: s.lat, lng: s.lng },
+    [labelCoords],
+  );
 
   const [showLogs, setShowLogs] = useState(false);
   const [showStats, setShowStats] = useState(false);
@@ -158,16 +169,16 @@ function App() {
   // 선택으로 리렌더될 때 참조가 바뀌면 MapView가 전체 범위로 다시 fitBounds 해버린다 — memoize 필수
   const stayMarkers = useMemo(
     () => [
-      ...stays.map((s) => ({ id: s.id, lat: s.lat, lng: s.lng })),
+      ...stays.map((s) => ({ id: s.id, ...snapCoord(s) })),
       ...(ongoing ? [{ id: null, lat: ongoing.lat, lng: ongoing.lng }] : []),
     ],
-    [stays, ongoing],
+    [stays, ongoing, snapCoord],
   );
   const focus = useMemo(() => {
-    if (selected) return { lat: selected.lat, lng: selected.lng };
+    if (selected) return snapCoord(selected);
     if (ongoingSelected && ongoing) return { lat: ongoing.lat, lng: ongoing.lng };
     return null;
-  }, [selected, ongoingSelected, ongoing]);
+  }, [selected, ongoingSelected, ongoing, snapCoord]);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col gap-3 bg-slate-50 p-4">
