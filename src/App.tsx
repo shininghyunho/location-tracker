@@ -10,10 +10,11 @@ import { exportData } from './features/export/exportData';
 import { LogPanel } from './features/logs/LogPanel';
 import { LabelSheet } from './features/stays/LabelSheet';
 import { StatsPanel } from './features/stats/StatsPanel';
+import { CalendarSheet } from './features/calendar/CalendarSheet';
 import { importTimeline } from './features/import/importTimeline';
 import type { ImportProgress } from './features/import/importTimeline';
 import { appLog } from './db/logs';
-import { deleteStay, getLabelCoords } from './db/stays';
+import { deleteStay, getDatesWithData, getLabelCoords } from './db/stays';
 import type { Stay } from './db/stays';
 import { countPoints } from './db/points';
 
@@ -68,6 +69,14 @@ function App() {
     [labelCoords],
   );
 
+  // 달력 점 표시 — 기록 있는 날 집합
+  const { data: dataDays = [] } = useQuery({
+    queryKey: ['timeline', 'dataDays'],
+    queryFn: getDatesWithData,
+  });
+  const dataDaySet = useMemo(() => new Set(dataDays), [dataDays]);
+
+  const [showCalendar, setShowCalendar] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -80,6 +89,10 @@ function App() {
   const closeTopOverlay = () => {
     if (labelTarget) {
       setLabelTarget(null);
+      return true;
+    }
+    if (showCalendar) {
+      setShowCalendar(false);
       return true;
     }
     if (showStats) {
@@ -270,7 +283,7 @@ function App() {
         <button type="button" onClick={() => changeDate(addDays(date, -1))} className="px-4 py-1 text-lg text-slate-600">
           ◀
         </button>
-        <button type="button" onClick={() => changeDate(today)} className="text-sm font-semibold text-slate-900">
+        <button type="button" onClick={() => setShowCalendar(true)} className="text-sm font-semibold text-slate-900">
           {date}
           {date === today && <span className="ml-1 text-blue-600">(오늘)</span>}
         </button>
@@ -375,6 +388,18 @@ function App() {
         onChange={onImportFile}
       />
 
+      {showCalendar && (
+        <CalendarSheet
+          value={date}
+          today={today}
+          dataDays={dataDaySet}
+          onPick={(d) => {
+            changeDate(d);
+            setShowCalendar(false);
+          }}
+          onClose={() => setShowCalendar(false)}
+        />
+      )}
       {showLogs && <LogPanel onClose={() => setShowLogs(false)} />}
       {showStats && <StatsPanel onClose={() => setShowStats(false)} />}
       {labelTarget && <LabelSheet stay={labelTarget} onClose={() => setLabelTarget(null)} />}
