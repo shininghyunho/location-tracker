@@ -3,7 +3,9 @@ import type { ChangeEvent } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { AuthorizationStatus } from '@transistorsoft/background-geolocation-types';
 import { useCollector } from './features/collector/useCollector';
+import { PermissionSheet } from './features/collector/PermissionSheet';
 import { useDayTimeline } from './features/stays/useDayTimeline';
 import { MapView } from './features/map/MapView';
 import { exportData } from './features/export/exportData';
@@ -45,7 +47,7 @@ function App() {
   const [date, setDate] = useState(today);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['timeline'] });
-  const { isCollecting, error, start, stop } = useCollector(invalidate);
+  const { isCollecting, error, permStatus, start, stop } = useCollector(invalidate);
 
   const { data } = useDayTimeline(date);
   const stays = useMemo(() => data?.stays ?? [], [data]);
@@ -78,6 +80,7 @@ function App() {
   const dataDaySet = useMemo(() => new Set(dataDays), [dataDays]);
 
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showPermRationale, setShowPermRationale] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -96,6 +99,10 @@ function App() {
     }
     if (showCalendar) {
       setShowCalendar(false);
+      return true;
+    }
+    if (showPermRationale) {
+      setShowPermRationale(false);
       return true;
     }
     if (showStats) {
@@ -135,6 +142,16 @@ function App() {
   const selectStay = (s: Stay | null) => {
     setOngoingSelected(false);
     setSelected(s);
+  };
+
+  // 수집 버튼: 이미 '항상 허용'이면 바로 시작, 아니면 사전 설명 모달부터
+  const handleCollectToggle = () => {
+    if (isCollecting) {
+      void stop();
+      return;
+    }
+    if (permStatus === AuthorizationStatus.Always) void start();
+    else setShowPermRationale(true);
   };
 
   // 왼쪽 스와이프 = 다음날(미래는 ▶ 버튼과 동일하게 차단), 오른쪽 스와이프 = 전날
@@ -220,7 +237,7 @@ function App() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={isCollecting ? stop : start}
+            onClick={handleCollectToggle}
             className={`rounded-lg px-4 py-2 text-sm font-semibold text-white ${
               isCollecting ? 'bg-red-500' : 'bg-blue-600'
             }`}
@@ -291,6 +308,30 @@ function App() {
       </header>
 
       {error && <p className="rounded-lg bg-red-100 p-3 text-sm text-red-700">{error}</p>}
+
+      {/* 권한 미흡 안내 — 수집 안 켜진 상태에서 '앱 사용 중만'/'거부'면 승격을 유도 */}
+      {!isCollecting &&
+        (permStatus === AuthorizationStatus.WhenInUse ||
+          permStatus === AuthorizationStatus.Denied ||
+          permStatus === AuthorizationStatus.Restricted) && (
+          <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+            <p>
+              {permStatus === AuthorizationStatus.WhenInUse
+                ? '‘앱 사용 중에만 허용’ 상태예요. 앱이 꺼지면 기록이 끊깁니다.'
+                : '위치 권한이 꺼져 있어 기록할 수 없어요.'}
+            </p>
+            <button
+              type="button"
+              onClick={() => void start()}
+              className="mt-2 rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white"
+            >
+              권한 다시 요청
+            </button>
+            <p className="mt-1.5 text-xs text-amber-600">
+              창이 안 뜨면 설정 &gt; 앱 &gt; 위치 트래커 &gt; 권한 &gt; 위치에서 ‘항상 허용’으로 바꿔주세요.
+            </p>
+          </div>
+        )}
 
       {importing && (
         <p className="rounded-lg bg-blue-100 p-3 text-sm text-blue-700">
@@ -434,6 +475,15 @@ function App() {
             setShowCalendar(false);
           }}
           onClose={() => setShowCalendar(false)}
+        />
+      )}
+      {showPermRationale && (
+        <PermissionSheet
+          onConfirm={() => {
+            setShowPermRationale(false);
+            void start();
+          }}
+          onClose={() => setShowPermRationale(false)}
         />
       )}
       {showLogs && <LogPanel onClose={() => setShowLogs(false)} />}
