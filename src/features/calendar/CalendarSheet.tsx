@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSwipe } from '../../lib/useSwipe';
 import { shiftPeriod, startOfPeriod } from '../stats/period';
 import { buildMonthGrid } from './monthGrid';
 
@@ -14,9 +15,24 @@ interface CalendarSheetProps {
 
 export function CalendarSheet({ value, today, dataDays, onPick, onClose }: CalendarSheetProps) {
   const [viewMonth, setViewMonth] = useState(startOfPeriod('month', value)); // 'YYYY-MM-01'
+  // 메인 화면과 동일하게 이동 방향의 slide-in을 한 번 재생 (열릴 땐 없음)
+  const [slideDir, setSlideDir] = useState<'next' | 'prev' | null>(null);
   const grid = buildMonthGrid(viewMonth);
   // 다음 달 첫날이 오늘보다 뒤면 미래 달 — ▶ 비활성
   const nextDisabled = shiftPeriod('month', viewMonth, 1) > today;
+
+  const moveMonth = (delta: number) => {
+    setSlideDir(delta > 0 ? 'next' : 'prev');
+    setViewMonth(shiftPeriod('month', viewMonth, delta));
+  };
+
+  // 왼쪽 스와이프 = 다음 달(미래는 ▶ 버튼과 동일하게 차단), 오른쪽 스와이프 = 이전 달
+  const swipeMonth = useSwipe(
+    () => {
+      if (!nextDisabled) moveMonth(1);
+    },
+    () => moveMonth(-1),
+  );
 
   return (
     <div className="fixed inset-0 z-[1100] flex flex-col justify-end bg-black/40" onClick={onClose}>
@@ -24,7 +40,7 @@ export function CalendarSheet({ value, today, dataDays, onPick, onClose }: Calen
         <div className="flex items-center justify-between pb-3">
           <button
             type="button"
-            onClick={() => setViewMonth(shiftPeriod('month', viewMonth, -1))}
+            onClick={() => moveMonth(-1)}
             className="px-3 py-1 text-lg text-slate-600"
           >
             ◀
@@ -32,48 +48,60 @@ export function CalendarSheet({ value, today, dataDays, onPick, onClose }: Calen
           <span className="text-base font-bold text-slate-900">{viewMonth.slice(0, 7)}</span>
           <button
             type="button"
-            onClick={() => setViewMonth(shiftPeriod('month', viewMonth, 1))}
+            onClick={() => moveMonth(1)}
             disabled={nextDisabled}
             className="px-3 py-1 text-lg text-slate-600 disabled:text-slate-300"
           >
             ▶
           </button>
         </div>
-        <div className="grid grid-cols-7 gap-1 pb-1 text-center text-xs text-slate-400">
-          {WEEKDAYS.map((w) => (
-            <div key={w} className="py-1">
-              {w}
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 gap-1 text-center">
-          {grid.cells.map((cell, i) => {
-            // 빈 셀도 날짜 셀과 같은 높이를 차지해야 6행 높이가 유지된다 — 안 그러면 빈 행이 찌부러진다
-            if (cell === null) return <div key={`b${i}`} className="h-10" />;
-            const isFuture = cell > today;
-            const isSelected = cell === value;
-            const hasData = dataDays.has(cell);
-            return (
-              <button
-                key={cell}
-                type="button"
-                disabled={isFuture}
-                onClick={() => onPick(cell)}
-                className={`relative flex h-10 items-center justify-center rounded-lg text-sm ${
-                  isSelected
-                    ? 'bg-blue-600 font-semibold text-white'
-                    : isFuture
-                      ? 'text-slate-300'
-                      : 'text-slate-700 active:bg-slate-100'
-                }`}
-              >
-                {Number(cell.slice(8, 10))}
-                {hasData && !isSelected && (
-                  <span className="absolute bottom-1 h-1 w-1 rounded-full bg-blue-500" />
-                )}
-              </button>
-            );
-          })}
+        <div {...swipeMonth} className="overflow-x-hidden">
+          <div className="grid grid-cols-7 gap-1 pb-1 text-center text-xs text-slate-400">
+            {WEEKDAYS.map((w) => (
+              <div key={w} className="py-1">
+                {w}
+              </div>
+            ))}
+          </div>
+          {/* key={viewMonth}로 remount → 달이 바뀔 때마다 이동 방향의 slide-in이 한 번 재생된다 */}
+          <div
+            key={viewMonth}
+            className={`grid grid-cols-7 gap-1 text-center ${
+              slideDir === 'next'
+                ? 'animate-slide-in-right'
+                : slideDir === 'prev'
+                  ? 'animate-slide-in-left'
+                  : ''
+            }`}
+          >
+            {grid.cells.map((cell, i) => {
+              // 빈 셀도 날짜 셀과 같은 높이를 차지해야 6행 높이가 유지된다 — 안 그러면 빈 행이 찌부러진다
+              if (cell === null) return <div key={`b${i}`} className="h-10" />;
+              const isFuture = cell > today;
+              const isSelected = cell === value;
+              const hasData = dataDays.has(cell);
+              return (
+                <button
+                  key={cell}
+                  type="button"
+                  disabled={isFuture}
+                  onClick={() => onPick(cell)}
+                  className={`relative flex h-10 items-center justify-center rounded-lg text-sm ${
+                    isSelected
+                      ? 'bg-blue-600 font-semibold text-white'
+                      : isFuture
+                        ? 'text-slate-300'
+                        : 'text-slate-700 active:bg-slate-100'
+                  }`}
+                >
+                  {Number(cell.slice(8, 10))}
+                  {hasData && !isSelected && (
+                    <span className="absolute bottom-1 h-1 w-1 rounded-full bg-blue-500" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <button
           type="button"
