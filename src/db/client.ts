@@ -18,17 +18,8 @@ CREATE INDEX IF NOT EXISTS idx_points_ts ON points (ts);
 DELETE FROM points WHERE id NOT IN (SELECT MIN(id) FROM points GROUP BY ts, source);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_points_ts_source ON points (ts, source);
 
-CREATE TABLE IF NOT EXISTS logs (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  ts TEXT NOT NULL,
-  level TEXT NOT NULL CHECK (level IN ('info', 'warn', 'error')),
-  tag TEXT NOT NULL,
-  message TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_logs_ts ON logs (ts);
-
--- 로그가 무한히 쌓이지 않도록 앱 시작 시 최근 2000건만 남긴다
-DELETE FROM logs WHERE id NOT IN (SELECT id FROM logs ORDER BY id DESC LIMIT 2000);
+-- 로그 화면·export 제거로 읽는 곳이 없어졌다. 기존 설치에 쌓인 로그도 여기서 비운다.
+DROP TABLE IF EXISTS logs;
 
 CREATE TABLE IF NOT EXISTS stays (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

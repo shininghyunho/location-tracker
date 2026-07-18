@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Stay } from '../../db/stays';
 import { getNearbyLabels, relabelNearbyUnlabeled, updateStayLabel } from '../../db/stays';
-import { appLog } from '../../db/logs';
+import { appLog } from '../../lib/appLog';
 
 export function LabelSheet({ stay, onClose }: { stay: Stay; onClose: () => void }) {
   const queryClient = useQueryClient();
@@ -24,7 +24,7 @@ export function LabelSheet({ stay, onClose }: { stay: Stay; onClose: () => void 
       await queryClient.invalidateQueries({ queryKey: ['timeline'] });
       onClose();
     } catch (e) {
-      await appLog('error', 'label', String(e));
+      appLog('error', 'label', String(e));
       setSaving(false);
     }
   };

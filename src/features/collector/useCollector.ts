@@ -9,7 +9,7 @@ import {
 } from '@transistorsoft/background-geolocation-types';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { insertPoint } from '../../db/points';
-import { appLog } from '../../db/logs';
+import { appLog } from '../../lib/appLog';
 import { toLocalIso } from '../../lib/localIso';
 
 const isNative = Capacitor.isNativePlatform();

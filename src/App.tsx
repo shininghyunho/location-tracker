@@ -11,8 +11,6 @@ import { useDayTimeline } from './features/stays/useDayTimeline';
 import { MapView } from './features/map/MapView';
 import { dropStaleEchoes } from './features/map/dropStaleEchoes';
 import { collapseStayWindows } from './features/map/collapseStayWindows';
-import { exportData } from './features/export/exportData';
-import { LogPanel } from './features/logs/LogPanel';
 import { LabelSheet } from './features/stays/LabelSheet';
 import { StatsPanel } from './features/stats/StatsPanel';
 import { CalendarSheet } from './features/calendar/CalendarSheet';
@@ -21,7 +19,7 @@ import { importTimeline } from './features/import/importTimeline';
 import { ImportGuideSheet } from './features/import/ImportGuideSheet';
 import { AboutSheet } from './features/about/AboutSheet';
 import type { ImportProgress } from './features/import/importTimeline';
-import { appLog } from './db/logs';
+import { appLog } from './lib/appLog';
 import { deleteStay, findNearestLabel, getDatesWithData, getLabelCoords } from './db/stays';
 import type { Stay } from './db/stays';
 import { countPoints } from './db/points';
@@ -113,7 +111,6 @@ function App() {
   const [showImportGuide, setShowImportGuide] = useState(false);
   const [showPermRationale, setShowPermRationale] = useState(false);
   const [showCollector, setShowCollector] = useState(false);
-  const [showLogs, setShowLogs] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -148,10 +145,6 @@ function App() {
     }
     if (showStats) {
       setShowStats(false);
-      return true;
-    }
-    if (showLogs) {
-      setShowLogs(false);
       return true;
     }
     if (menuOpen) {
@@ -227,22 +220,10 @@ function App() {
         `가져오기 완료: 위치 ${r.pointCount.toLocaleString()}건 · 체류 ${r.stayCount.toLocaleString()}건 추가`,
       );
     } catch (err) {
-      await appLog('error', 'import', String(err));
+      appLog('error', 'import', String(err));
       window.alert('가져오기 실패 — 파일 형식을 확인해주세요');
     } finally {
       setImporting(null);
-    }
-  };
-
-  const [exporting, setExporting] = useState(false);
-  const onExport = async () => {
-    setExporting(true);
-    try {
-      await exportData();
-    } catch {
-      // 공유 시트를 취소해도 reject되므로 조용히 무시한다
-    } finally {
-      setExporting(false);
     }
   };
 
@@ -321,27 +302,6 @@ function App() {
                     className="block w-full px-4 py-2 text-left text-sm text-slate-700 disabled:text-slate-300"
                   >
                     {importing ? '가져오는 중…' : '가져오기'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onExport();
-                    }}
-                    disabled={exporting}
-                    className="block w-full px-4 py-2 text-left text-sm text-slate-700 disabled:text-slate-300"
-                  >
-                    {exporting ? '내보내는 중…' : '내보내기'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setShowLogs(true);
-                    }}
-                    className="block w-full px-4 py-2 text-left text-sm text-slate-700"
-                  >
-                    로그
                   </button>
                   <button
                     type="button"
@@ -563,7 +523,6 @@ function App() {
           onClose={() => setShowCollector(false)}
         />
       )}
-      {showLogs && <LogPanel onClose={() => setShowLogs(false)} />}
       {showAbout && <AboutSheet onClose={() => setShowAbout(false)} />}
       {showStats && <StatsPanel onClose={() => setShowStats(false)} />}
       {labelTarget && <LabelSheet stay={labelTarget} onClose={() => setLabelTarget(null)} />}
