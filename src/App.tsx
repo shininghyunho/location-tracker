@@ -18,7 +18,7 @@ import { useSwipe } from './lib/useSwipe';
 import { importTimeline } from './features/import/importTimeline';
 import type { ImportProgress } from './features/import/importTimeline';
 import { appLog } from './db/logs';
-import { deleteStay, getDatesWithData, getLabelCoords } from './db/stays';
+import { deleteStay, findNearestLabel, getDatesWithData, getLabelCoords } from './db/stays';
 import type { Stay } from './db/stays';
 import { countPoints } from './db/points';
 
@@ -55,6 +55,13 @@ function App() {
   const points = data?.points ?? [];
   // 진행 중 클러스터는 아직 저장 전이라 별도 표시 — 오늘 화면에서만 의미가 있다
   const ongoing = date === today ? (data?.ongoing ?? null) : null;
+
+  // 진행 중 위치가 저장된 장소 반경 안이면 '집(현재 위치)'처럼 이름으로 표기 — F5와 같은 findNearestLabel 재사용
+  const { data: ongoingLabel = null } = useQuery({
+    queryKey: ['timeline', 'ongoingLabel', ongoing?.lat, ongoing?.lng],
+    queryFn: () => findNearestLabel(ongoing!.lat, ongoing!.lng),
+    enabled: ongoing !== null,
+  });
 
   const { data: total = 0 } = useQuery({
     queryKey: ['timeline', 'count'],
@@ -447,7 +454,9 @@ function App() {
             }`}
           >
             <div className="flex items-baseline justify-between">
-              <span className="font-semibold text-blue-700">지금 여기</span>
+              <span className="font-semibold text-blue-700">
+                {ongoingLabel ? `${ongoingLabel}(현재 위치)` : '지금 여기'}
+              </span>
               <span className="text-sm text-slate-500">{fmtDuration(ongoing.startTs, ongoing.endTs)}째</span>
             </div>
             <div className="text-sm text-slate-500">{fmtTime(ongoing.startTs)} ~ 진행 중</div>
