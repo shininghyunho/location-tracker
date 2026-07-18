@@ -1,32 +1,33 @@
-# React + TypeScript + Vite
+# 위치 트래커
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+하루 동선을 자동으로 기록하는 개인용 안드로이드 앱. 구글맵 타임라인처럼 어디에 얼마나 머물렀는지 보여주되, **모든 데이터는 내 폰에만 저장**된다(서버 전송 없음).
 
-Currently, two official plugins are available:
+## 시작하기
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. 앱을 열고 상단의 `○ 수집 꺼짐` 버튼을 눌러 **수집 시작**.
+2. 위치 권한은 **"항상 허용"** 을 선택해야 화면을 꺼도 기록된다.
+3. 이후엔 아무것도 안 해도 된다. 1분 간격으로 위치를 수집하고, 한곳에 10분 이상 머물면 체류로 기록된다.
 
-## React Compiler
+## 화면 안내
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**홈 (타임라인)**
+- 날짜별로 지도 위 이동 경로와 체류 카드 목록을 보여준다.
+- 날짜 이동: 좌우 스와이프 또는 `◀ ▶`. 날짜를 누르면 달력으로 점프, 제목("위치 트래커")을 누르면 오늘로.
+- 카드를 누르면 지도가 그 장소로 이동하고 수정/삭제 버튼이 나온다.
 
-## Expanding the Oxlint configuration
+**장소 이름 붙이기**
+- 카드의 [수정]으로 "집", "회사"처럼 이름을 붙인다. 한 번 붙이면 같은 곳을 다시 방문할 때 자동으로 같은 이름이 달리고, 과거 기록에도 소급된다.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+**통계** (헤더 막대 아이콘)
+- 주/월 단위 장소 랭킹, 요일별 체류, 장소별 시간대 히트맵, 이동 요약. 좌우 스와이프로 기간 이동.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
+## 데이터 관리 (⚙ 메뉴)
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+- **백업**: 전체 기록을 파일 하나로 내보낸다. 데이터가 폰에만 있으므로 가끔 백업해 두는 것을 권장.
+- **가져오기**: 구글맵 타임라인 내보내기 파일(안드로이드 설정 → 위치 → 타임라인 → 내보내기)을 불러와 과거 기록을 채울 수 있다.
+
+## 알아두기
+
+- 지도에 가끔 뜨는 검은 "LICENSE VALIDATION FAILURE" 배너는 무료 빌드 표시일 뿐, 기능과 무관하다.
+- 배터리 설정에서 이 앱을 **최적화 제외**로 두면 수집이 끊기지 않는다.
+- 수집 중지는 상단 상태 버튼 → 시트 안에서 한 번 더 확인을 거친다(실수로 꺼져 기록에 구멍 나는 것 방지).
