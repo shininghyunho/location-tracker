@@ -11,6 +11,7 @@ import {
 } from './period';
 import type { PeriodUnit } from './period';
 import { computeStats, UNLABELED } from './computeStats';
+import { useSwipe } from '../../lib/useSwipe';
 
 const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
 
@@ -56,17 +57,29 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
   const [unit, setUnit] = useState<PeriodUnit>('week');
   const [anchor, setAnchor] = useState(() => startOfPeriod('week', today));
   const [expanded, setExpanded] = useState<string | null>(null);
+  // 메인 화면과 동일하게 이동 방향의 slide-in을 한 번 재생 — 단위 토글은 방향 없음(null)
+  const [slideDir, setSlideDir] = useState<'next' | 'prev' | null>(null);
 
   // 단위를 바꾸면 오늘이 든 기간으로 초기화 — 주↔월 앵커는 서로 호환되지 않는다
   const changeUnit = (u: PeriodUnit) => {
     setUnit(u);
     setAnchor(startOfPeriod(u, today));
     setExpanded(null);
+    setSlideDir(null);
   };
   const moveBy = (delta: number) => {
+    setSlideDir(delta > 0 ? 'next' : 'prev');
     setAnchor(shiftPeriod(unit, anchor, delta));
     setExpanded(null);
   };
+
+  // 왼쪽 스와이프 = 다음 기간(미래는 ▶ 버튼과 동일하게 차단), 오른쪽 스와이프 = 이전 기간
+  const swipePeriod = useSwipe(
+    () => {
+      if (!isCurrentPeriod(unit, anchor, today)) moveBy(1);
+    },
+    () => moveBy(-1),
+  );
 
   const { fromTs, toTs } = periodRange(unit, anchor);
   const { data: stays = [] } = useQuery({
@@ -148,8 +161,19 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      <div className="mt-3 flex flex-col gap-3 overflow-y-auto pb-4">
-        <section className="rounded-lg bg-white p-3 shadow-sm">
+      <div {...swipePeriod} className="mt-3 flex flex-col overflow-x-hidden overflow-y-auto pb-4">
+        {/* key로 remount → 기간이 바뀔 때마다 이동 방향의 slide-in이 한 번 재생된다 */}
+        <div
+          key={`${unit}-${anchor}`}
+          className={`flex flex-col gap-3 ${
+            slideDir === 'next'
+              ? 'animate-slide-in-right'
+              : slideDir === 'prev'
+                ? 'animate-slide-in-left'
+                : ''
+          }`}
+        >
+          <section className="rounded-lg bg-white p-3 shadow-sm">
           <h3 className="pb-2 text-sm font-bold text-slate-900">장소 랭킹</h3>
           <ul className="flex flex-col gap-2">
             {stats.places.map((p) => (
@@ -225,6 +249,7 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
             <p className="text-slate-400">이 기간의 이동 기록이 없습니다</p>
           )}
         </section>
+        </div>
       </div>
     </div>
   );
