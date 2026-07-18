@@ -17,5 +17,7 @@ export function buildMonthGrid(anchor: string): MonthGrid {
   for (let d = 1; d <= daysInMonth; d++) {
     cells.push(`${year}-${mm}-${String(d).padStart(2, '0')}`);
   }
+  // 항상 6행(42셀)으로 뒤를 채운다 — 월마다 행 수(4~6)가 달라지면 바텀시트 높이가 변해 상단 ◀▶가 튄다
+  while (cells.length < 42) cells.push(null);
   return { year, month, cells };
 }
