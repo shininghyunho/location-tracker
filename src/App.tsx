@@ -16,6 +16,7 @@ import { StatsPanel } from './features/stats/StatsPanel';
 import { CalendarSheet } from './features/calendar/CalendarSheet';
 import { useSwipe } from './lib/useSwipe';
 import { importTimeline } from './features/import/importTimeline';
+import { ImportGuideSheet } from './features/import/ImportGuideSheet';
 import type { ImportProgress } from './features/import/importTimeline';
 import { appLog } from './db/logs';
 import { deleteStay, findNearestLabel, getDatesWithData, getLabelCoords } from './db/stays';
@@ -88,6 +89,7 @@ function App() {
   const dataDaySet = useMemo(() => new Set(dataDays), [dataDays]);
 
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showImportGuide, setShowImportGuide] = useState(false);
   const [showPermRationale, setShowPermRationale] = useState(false);
   const [showCollector, setShowCollector] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
@@ -108,6 +110,10 @@ function App() {
     }
     if (showCalendar) {
       setShowCalendar(false);
+      return true;
+    }
+    if (showImportGuide) {
+      setShowImportGuide(false);
       return true;
     }
     if (showPermRationale) {
@@ -287,7 +293,7 @@ function App() {
                     type="button"
                     onClick={() => {
                       setMenuOpen(false);
-                      fileRef.current?.click();
+                      setShowImportGuide(true);
                     }}
                     disabled={importing !== null}
                     className="block w-full px-4 py-2 text-left text-sm text-slate-700 disabled:text-slate-300"
@@ -492,6 +498,15 @@ function App() {
             setShowCalendar(false);
           }}
           onClose={() => setShowCalendar(false)}
+        />
+      )}
+      {showImportGuide && (
+        <ImportGuideSheet
+          onPickFile={() => {
+            setShowImportGuide(false);
+            fileRef.current?.click();
+          }}
+          onClose={() => setShowImportGuide(false)}
         />
       )}
       {showPermRationale && (
