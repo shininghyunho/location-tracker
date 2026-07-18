@@ -4,11 +4,15 @@ import type { Point } from '../../db/points';
 export interface StayParams {
   radiusM: number;
   minDurationMs: number;
+  graceMs: number; // 반경 밖 연속 체류가 이보다 짧으면 이탈로 보지 않고 흡수(blip)
+  maxAccuracyM: number; // 이보다 부정확한 점은 판정 전 제외
 }
 
 export const DEFAULT_STAY_PARAMS: StayParams = {
   radiusM: 100,
   minDurationMs: 10 * 60_000,
+  graceMs: 5 * 60_000,
+  maxAccuracyM: 100,
 };
 
 export interface StayDraft {
@@ -52,10 +56,14 @@ function toDraft(c: Cluster): StayDraft {
 // PRD §4 체류지 판정: 시간순 points를 훑으며 중심 반경 D 이내면 같은 클러스터,
 // 벗어나면 클러스터를 닫고 (체류시간 ≥ T일 때만 stay로 확정) 새 클러스터 시작
 export function detectStays(points: Point[], params: StayParams = DEFAULT_STAY_PARAMS): DetectResult {
+  // 정확도 나쁜 점은 판정 전 제외 — null은 정보 없음일 뿐이라 유지(구글 import 유래)
+  const usable = points.filter(
+    (p) => p.accuracy_m == null || p.accuracy_m <= params.maxAccuracyM,
+  );
   const finalized: StayDraft[] = [];
   let cluster: Cluster | null = null;
 
-  for (const p of points) {
+  for (const p of usable) {
     if (cluster) {
       const c = centroid(cluster);
       if (haversineM(c.lat, c.lng, p.lat, p.lng) <= params.radiusM) {
