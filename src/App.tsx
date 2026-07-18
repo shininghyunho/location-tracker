@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AuthorizationStatus } from '@transistorsoft/background-geolocation-types';
 import { useCollector } from './features/collector/useCollector';
 import { PermissionSheet } from './features/collector/PermissionSheet';
+import { CollectorSheet } from './features/collector/CollectorSheet';
 import { useDayTimeline } from './features/stays/useDayTimeline';
 import { MapView } from './features/map/MapView';
 import { exportData } from './features/export/exportData';
@@ -81,6 +82,7 @@ function App() {
 
   const [showCalendar, setShowCalendar] = useState(false);
   const [showPermRationale, setShowPermRationale] = useState(false);
+  const [showCollector, setShowCollector] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -103,6 +105,10 @@ function App() {
     }
     if (showPermRationale) {
       setShowPermRationale(false);
+      return true;
+    }
+    if (showCollector) {
+      setShowCollector(false);
       return true;
     }
     if (showStats) {
@@ -144,12 +150,9 @@ function App() {
     setSelected(s);
   };
 
-  // 수집 버튼: 이미 '항상 허용'이면 바로 시작, 아니면 사전 설명 모달부터
-  const handleCollectToggle = () => {
-    if (isCollecting) {
-      void stop();
-      return;
-    }
+  // 수집 시작(시트에서 호출): 이미 '항상 허용'이면 바로 시작, 아니면 사전 설명 모달(U9)부터
+  const handleStartRequest = () => {
+    setShowCollector(false);
     if (permStatus === AuthorizationStatus.Always) void start();
     else setShowPermRationale(true);
   };
@@ -235,14 +238,29 @@ function App() {
           </button>
         </h1>
         <div className="flex items-center gap-2">
+          {/* 상태 표시만 — 시작/중지 행동은 시트 안(CollectorSheet)으로. 꺼짐은 amber로 시선 유도 */}
           <button
             type="button"
-            onClick={handleCollectToggle}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold text-white ${
-              isCollecting ? 'bg-red-500' : 'bg-blue-600'
+            onClick={() => setShowCollector(true)}
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
+              isCollecting
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                : 'border-amber-300 bg-amber-50 text-amber-700'
             }`}
           >
-            {isCollecting ? '수집 중지' : '수집 시작'}
+            {isCollecting ? '● 수집 중' : '○ 수집 꺼짐'}
+          </button>
+          <button
+            type="button"
+            aria-label="통계"
+            onClick={() => setShowStats(true)}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600"
+          >
+            <svg viewBox="0 0 16 16" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+              <rect x="1.5" y="8" width="3" height="6.5" rx="0.75" />
+              <rect x="6.5" y="4" width="3" height="10.5" rx="0.75" />
+              <rect x="11.5" y="1.5" width="3" height="13" rx="0.75" />
+            </svg>
           </button>
           <div className="relative">
             <button
@@ -289,16 +307,6 @@ function App() {
                     className="block w-full px-4 py-2 text-left text-sm text-slate-700"
                   >
                     로그
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setShowStats(true);
-                    }}
-                    className="block w-full px-4 py-2 text-left text-sm text-slate-700"
-                  >
-                    통계
                   </button>
                 </div>
               </>
@@ -395,32 +403,35 @@ function App() {
             <div className="text-sm text-slate-500">
               {fmtTime(s.start_ts)} ~ {fmtTime(s.end_ts)}
             </div>
-            <div className="text-xs text-slate-400">
-              {s.lat.toFixed(5)}, {s.lng.toFixed(5)}
-            </div>
+            {/* 좌표는 매일 보는 정보가 아니라서 펼쳤을 때만 (U19) */}
             {selected?.id === s.id && (
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setLabelTarget(s);
-                  }}
-                  className="flex-1 rounded-md bg-blue-50 py-2 text-sm font-semibold text-blue-700"
-                >
-                  수정
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(s);
-                  }}
-                  className="flex-1 rounded-md bg-red-50 py-2 text-sm font-semibold text-red-600"
-                >
-                  삭제
-                </button>
-              </div>
+              <>
+                <div className="pt-1 text-xs text-slate-400">
+                  {s.lat.toFixed(5)}, {s.lng.toFixed(5)}
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLabelTarget(s);
+                    }}
+                    className="flex-1 rounded-md bg-blue-50 py-2 text-sm font-semibold text-blue-700"
+                  >
+                    수정
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(s);
+                    }}
+                    className="flex-1 rounded-md bg-red-50 py-2 text-sm font-semibold text-red-600"
+                  >
+                    삭제
+                  </button>
+                </div>
+              </>
             )}
           </li>
         ))}
@@ -440,9 +451,11 @@ function App() {
               <span className="text-sm text-slate-500">{fmtDuration(ongoing.startTs, ongoing.endTs)}째</span>
             </div>
             <div className="text-sm text-slate-500">{fmtTime(ongoing.startTs)} ~ 진행 중</div>
-            <div className="text-xs text-slate-400">
-              {ongoing.lat.toFixed(5)}, {ongoing.lng.toFixed(5)}
-            </div>
+            {ongoingSelected && (
+              <div className="pt-1 text-xs text-slate-400">
+                {ongoing.lat.toFixed(5)}, {ongoing.lng.toFixed(5)}
+              </div>
+            )}
           </li>
         )}
 
@@ -451,11 +464,6 @@ function App() {
           )}
         </ul>
       </div>
-
-      <footer className="flex items-center justify-between pb-2 text-xs text-slate-400">
-        <span>누적 points {total.toLocaleString()}</span>
-        <span>{isCollecting ? '수집 중 (1분 간격)' : '수집 꺼짐'}</span>
-      </footer>
 
       <input
         ref={fileRef}
@@ -484,6 +492,19 @@ function App() {
             void start();
           }}
           onClose={() => setShowPermRationale(false)}
+        />
+      )}
+      {showCollector && (
+        <CollectorSheet
+          isCollecting={isCollecting}
+          permStatus={permStatus}
+          totalPoints={total}
+          onStart={handleStartRequest}
+          onStop={() => {
+            void stop();
+            setShowCollector(false);
+          }}
+          onClose={() => setShowCollector(false)}
         />
       )}
       {showLogs && <LogPanel onClose={() => setShowLogs(false)} />}
