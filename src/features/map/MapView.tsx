@@ -48,7 +48,8 @@ export function MapView({ trackPoints, stays, focus, onStayTap }: MapViewProps) 
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    const map = L.map(containerRef.current).setView(SEOUL, 12);
+    const map = L.map(containerRef.current, { attributionControl: false }).setView(SEOUL, 12);
+    L.control.attribution({ prefix: false }).addTo(map);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
