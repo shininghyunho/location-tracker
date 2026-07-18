@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 줌 애니메이션 중 벡터 오버레이(궤적 polyline) 숨김 — SVG 레이어째 CSS scale돼 선이 화면을 덮는 문제 방지 */
+.leaflet-zoom-anim .leaflet-overlay-pane {
+  visibility: hidden;
+}

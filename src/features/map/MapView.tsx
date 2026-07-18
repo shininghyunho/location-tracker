@@ -24,6 +24,16 @@ interface MapViewProps {
 const SEOUL: L.LatLngTuple = [37.5665, 126.978];
 const FOCUS_ZOOM = 16;
 const FIT_OPTS = { padding: [24, 24] as L.PointTuple, maxZoom: 17 };
+// 기본 flyTo는 거리 비례로 수 초씩 걸려 카드 탭 반응이 굼뜨다 — 고정 단축
+const FLY_OPTS = { duration: 1.0 };
+
+// circleMarker(SVG)는 줌 애니메이션 중 레이어째 CSS scale돼 화면을 덮을 만큼 커진다 — 픽셀 고정 divIcon 사용
+const STAY_ICON = L.divIcon({
+  className: '',
+  html: '<div style="width:18px;height:18px;border-radius:50%;background:#ef4444;border:2.5px solid #b91c1c;opacity:0.9"></div>',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+});
 
 export function MapView({ trackPoints, stays, focus, onStayTap }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -62,14 +72,9 @@ export function MapView({ trackPoints, stays, focus, onStayTap }: MapViewProps) 
         { color: '#3b82f6', weight: 3 },
       ).addTo(layer);
     }
-    // 기본 마커 아이콘은 번들러에서 이미지 경로가 깨지므로 circleMarker를 쓴다
+    // 기본 마커 아이콘은 번들러에서 이미지 경로가 깨지므로 divIcon을 쓴다
     for (const s of stays) {
-      const marker = L.circleMarker([s.lat, s.lng], {
-        radius: 9,
-        color: '#b91c1c',
-        fillColor: '#ef4444',
-        fillOpacity: 0.8,
-      }).addTo(layer);
+      const marker = L.marker([s.lat, s.lng], { icon: STAY_ICON }).addTo(layer);
       if (s.id !== null) {
         const id = s.id;
         marker.on('click', () => onStayTapRef.current(id));
@@ -81,6 +86,23 @@ export function MapView({ trackPoints, stays, focus, onStayTap }: MapViewProps) 
     if (boundsRef.current) map.fitBounds(boundsRef.current, FIT_OPTS);
   }, [trackPoints, stays]);
 
+  // flyTo 비행 중엔 렌더러 컨테이너가 매 프레임 CSS scale돼 궤적 선이 화면을 덮는다
+  // (CSS 줌 전환과 별개 경로라 zoom-anim 클래스가 안 붙음) — 비행 동안만 벡터 팬을 숨긴다
+  const flyWithTrackHidden = (fly: (map: L.Map) => void) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const pane = map.getPane('overlayPane');
+    if (pane) {
+      pane.style.visibility = 'hidden';
+      const show = () => {
+        pane.style.visibility = '';
+      };
+      map.once('moveend', show);
+      window.setTimeout(show, 1500); // 뷰 변화가 없어 moveend가 안 오는 경우 안전장치
+    }
+    fly(map);
+  };
+
   const [locating, setLocating] = useState(false);
   const onMyLocation = async () => {
     setLocating(true);
@@ -88,12 +110,12 @@ export function MapView({ trackPoints, stays, focus, onStayTap }: MapViewProps) 
       if (Capacitor.isNativePlatform()) {
         // persist: false — 버튼 조회로 points 데이터를 오염시키지 않는다
         const loc = await BackgroundGeolocation.getCurrentPosition({ samples: 1, timeout: 30, persist: false });
-        mapRef.current?.flyTo([loc.coords.latitude, loc.coords.longitude], FOCUS_ZOOM);
+        flyWithTrackHidden((m) => m.flyTo([loc.coords.latitude, loc.coords.longitude], FOCUS_ZOOM, FLY_OPTS));
       } else {
         const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
           navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10_000 }),
         );
-        mapRef.current?.flyTo([pos.coords.latitude, pos.coords.longitude], FOCUS_ZOOM);
+        flyWithTrackHidden((m) => m.flyTo([pos.coords.latitude, pos.coords.longitude], FOCUS_ZOOM, FLY_OPTS));
       }
     } catch {
       // 위치 조회 실패(권한 거부·타임아웃)는 조용히 무시
@@ -107,11 +129,11 @@ export function MapView({ trackPoints, stays, focus, onStayTap }: MapViewProps) 
     if (!map) return;
     if (focus) {
       hadFocusRef.current = true;
-      map.flyTo([focus.lat, focus.lng], FOCUS_ZOOM);
+      flyWithTrackHidden((m) => m.flyTo([focus.lat, focus.lng], FOCUS_ZOOM, FLY_OPTS));
     } else if (hadFocusRef.current) {
       // 선택 해제 → 하루 전체 범위로 복귀 (최초 마운트 땐 발동하지 않는다)
       hadFocusRef.current = false;
-      if (boundsRef.current) map.flyToBounds(boundsRef.current, FIT_OPTS);
+      if (boundsRef.current) flyWithTrackHidden((m) => m.flyToBounds(boundsRef.current!, { ...FIT_OPTS, ...FLY_OPTS }));
     }
   }, [focus]);
 
