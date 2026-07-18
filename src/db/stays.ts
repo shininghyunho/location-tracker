@@ -83,6 +83,18 @@ export async function getStaysByRange(fromTs: string, toTs: string): Promise<Sta
   return (res.values ?? []) as Stay[];
 }
 
+// 달력 점 표시용 — 체류 기록이 있는 날(중복 없음). 점은 stay 기준이라 이동만 한 날은 빠진다
+export async function getDatesWithData(): Promise<string[]> {
+  if (!isNative) {
+    return [...new Set(webStays.filter((s) => !s.deleted).map((s) => s.start_ts.slice(0, 10)))];
+  }
+  const db = await getDb();
+  const res = await db.query(
+    'SELECT DISTINCT substr(start_ts, 1, 10) AS d FROM stays WHERE deleted = 0',
+  );
+  return ((res.values ?? []) as { d: string }[]).map((r) => r.d);
+}
+
 export async function deleteStay(id: number): Promise<void> {
   if (!isNative) {
     const target = webStays.find((s) => s.id === id);
