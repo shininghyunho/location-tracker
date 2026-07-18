@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { getDb } from './client';
 import { DEFAULT_STAY_PARAMS, haversineM } from '../features/stays/detectStays';
+import { addDaysStr } from '../features/stats/period';
 
 export interface Stay {
   id: number;
@@ -83,16 +84,23 @@ export async function getStaysByRange(fromTs: string, toTs: string): Promise<Sta
   return (res.values ?? []) as Stay[];
 }
 
-// 달력 점 표시용 — 체류 기록이 있는 날(중복 없음). 점은 stay 기준이라 이동만 한 날은 빠진다
+// 달력 점 표시용 — 체류 기록이 있는 날(중복 없음). 점은 stay 기준이라 이동만 한 날은 빠진다.
+// 자정 넘긴 체류(23:30~01:00)는 start_ts만 보면 다음날 점이 빠지므로 start~end 전 날짜를 찍는다
 export async function getDatesWithData(): Promise<string[]> {
+  let rows: { start_ts: string; end_ts: string }[];
   if (!isNative) {
-    return [...new Set(webStays.filter((s) => !s.deleted).map((s) => s.start_ts.slice(0, 10)))];
+    rows = webStays.filter((s) => !s.deleted);
+  } else {
+    const db = await getDb();
+    const res = await db.query('SELECT start_ts, end_ts FROM stays WHERE deleted = 0');
+    rows = (res.values ?? []) as { start_ts: string; end_ts: string }[];
   }
-  const db = await getDb();
-  const res = await db.query(
-    'SELECT DISTINCT substr(start_ts, 1, 10) AS d FROM stays WHERE deleted = 0',
-  );
-  return ((res.values ?? []) as { d: string }[]).map((r) => r.d);
+  const days = new Set<string>();
+  for (const r of rows) {
+    const last = r.end_ts.slice(0, 10);
+    for (let d = r.start_ts.slice(0, 10); d <= last; d = addDaysStr(d, 1)) days.add(d);
+  }
+  return [...days];
 }
 
 export async function deleteStay(id: number): Promise<void> {
@@ -108,6 +116,17 @@ export async function deleteStay(id: number): Promise<void> {
 // F5 라벨 매칭 반경 — 체류판정과 같은 설정값을 공유한다
 const labelRadiusM = DEFAULT_STAY_PARAMS.radiusM;
 
+// 라벨된(삭제 안 된) stay만 — 라벨 근접 조회의 스캔 대상을 좁힌다.
+// 새 stay 확정마다 findNearestLabel이 불려 전체(19개월치)를 훑던 것을 라벨된 것만으로 줄인다
+async function getLabeledStays(): Promise<Stay[]> {
+  if (!isNative) return webStays.filter((s) => !s.deleted && s.label !== null);
+  const db = await getDb();
+  const res = await db.query(
+    'SELECT * FROM stays WHERE deleted = 0 AND label IS NOT NULL ORDER BY start_ts',
+  );
+  return (res.values ?? []) as Stay[];
+}
+
 export async function updateStayLabel(id: number, label: string | null): Promise<void> {
   if (!isNative) {
     const target = webStays.find((s) => s.id === id);
@@ -121,10 +140,9 @@ export async function updateStayLabel(id: number, label: string | null): Promise
 // 반경 내 라벨된 stay 중 가장 가까운 것의 라벨 — 새 stay 확정 시 자동 상속용
 export async function findNearestLabel(lat: number, lng: number): Promise<string | null> {
   let best: { label: string; dist: number } | null = null;
-  for (const s of await getAllStays()) {
-    if (s.label === null) continue;
+  for (const s of await getLabeledStays()) {
     const dist = haversineM(lat, lng, s.lat, s.lng);
-    if (dist <= labelRadiusM && (!best || dist < best.dist)) best = { label: s.label, dist };
+    if (dist <= labelRadiusM && (!best || dist < best.dist)) best = { label: s.label!, dist };
   }
   return best?.label ?? null;
 }
@@ -157,8 +175,8 @@ export async function getLabelCoords(): Promise<Record<string, { lat: number; ln
 }
 
 export async function getNearbyLabels(lat: number, lng: number): Promise<string[]> {
-  const labels = (await getAllStays())
-    .filter((s) => s.label !== null && haversineM(lat, lng, s.lat, s.lng) <= labelRadiusM)
+  const labels = (await getLabeledStays())
+    .filter((s) => haversineM(lat, lng, s.lat, s.lng) <= labelRadiusM)
     .map((s) => s.label!);
   return [...new Set(labels)];
 }
