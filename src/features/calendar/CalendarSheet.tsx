@@ -48,7 +48,8 @@ export function CalendarSheet({ value, today, dataDays, onPick, onClose }: Calen
         </div>
         <div className="grid grid-cols-7 gap-1 text-center">
           {grid.cells.map((cell, i) => {
-            if (cell === null) return <div key={`b${i}`} />;
+            // 빈 셀도 날짜 셀과 같은 높이를 차지해야 6행 높이가 유지된다 — 안 그러면 빈 행이 찌부러진다
+            if (cell === null) return <div key={`b${i}`} className="h-10" />;
             const isFuture = cell > today;
             const isSelected = cell === value;
             const hasData = dataDays.has(cell);
