@@ -62,19 +62,28 @@ export function detectStays(points: Point[], params: StayParams = DEFAULT_STAY_P
   );
   const finalized: StayDraft[] = [];
   let cluster: Cluster | null = null;
+  let outRunFirstTs: string | null = null; // 현재 연속 '밖' 구간의 첫 점 시각(없으면 null)
 
   for (const p of usable) {
-    if (cluster) {
-      const c = centroid(cluster);
-      if (haversineM(c.lat, c.lng, p.lat, p.lng) <= params.radiusM) {
-        cluster.points.push(p);
-        cluster.latSum += p.lat;
-        cluster.lngSum += p.lng;
-        continue;
-      }
-      if (durationMs(cluster) >= params.minDurationMs) finalized.push(toDraft(cluster));
+    if (!cluster) {
+      cluster = { points: [p], latSum: p.lat, lngSum: p.lng };
+      continue;
     }
+    const c = centroid(cluster);
+    if (haversineM(c.lat, c.lng, p.lat, p.lng) <= params.radiusM) {
+      outRunFirstTs = null; // 복귀 → 유예 구간 리셋
+      cluster.points.push(p);
+      cluster.latSum += p.lat;
+      cluster.lngSum += p.lng;
+      continue;
+    }
+    // 반경 밖: 연속 이탈 시간이 grace 미만이면 blip으로 흡수(중심에 넣지 않음)
+    if (outRunFirstTs === null) outRunFirstTs = p.ts;
+    if (Date.parse(p.ts) - Date.parse(outRunFirstTs) < params.graceMs) continue;
+    // 이탈 확정 — 클러스터를 닫고(≥minDuration이면 stay), 이 점부터 새 클러스터
+    if (durationMs(cluster) >= params.minDurationMs) finalized.push(toDraft(cluster));
     cluster = { points: [p], latSum: p.lat, lngSum: p.lng };
+    outRunFirstTs = null;
   }
 
   const ongoing =
