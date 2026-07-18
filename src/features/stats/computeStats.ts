@@ -1,5 +1,5 @@
 import type { Stay } from '../../db/stays';
-import { haversineM } from '../stays/detectStays';
+import { DEFAULT_STAY_PARAMS, haversineM } from '../stays/detectStays';
 import { addDaysStr, dayStartTs } from './period';
 
 // 라벨이 실제로 이 문구와 같아도 한 묶음으로 보이는 것뿐이라 개인용 MVP에선 허용
@@ -78,8 +78,11 @@ export function computeStats(stays: Stay[], fromTs: string, toTs: string): Stats
     const next = stays[i];
     const gap = Date.parse(next.start_ts) - Date.parse(prev.end_ts);
     if (gap <= 0 || gap > MOVE_MAX_GAP_MS) continue;
+    const dist = haversineM(prev.lat, prev.lng, next.lat, next.lng);
+    // 반경 안 재체류는 실제 이동이 아니다 — 거리 0인데 gap만 더해져 이동시간이 부풀던 것 방지
+    if (dist <= DEFAULT_STAY_PARAMS.radiusM) continue;
     move.totalMs += gap;
-    move.distanceM += haversineM(prev.lat, prev.lng, next.lat, next.lng);
+    move.distanceM += dist;
     move.count++;
   }
 
