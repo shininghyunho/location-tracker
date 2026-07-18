@@ -9,6 +9,7 @@ import { PermissionSheet } from './features/collector/PermissionSheet';
 import { CollectorSheet } from './features/collector/CollectorSheet';
 import { useDayTimeline } from './features/stays/useDayTimeline';
 import { MapView } from './features/map/MapView';
+import { dropStaleEchoes } from './features/map/dropStaleEchoes';
 import { exportData } from './features/export/exportData';
 import { LogPanel } from './features/logs/LogPanel';
 import { LabelSheet } from './features/stays/LabelSheet';
@@ -57,8 +58,13 @@ function App() {
 
   const { data } = useDayTimeline(date);
   const stays = useMemo(() => data?.stays ?? [], [data]);
-  const points = (data?.points ?? []).filter(
-    (p) => p.accuracy_m == null || p.accuracy_m <= TRACK_MAX_ACCURACY_M,
+  // useMemo 참조 안정화 — 무관한 리렌더마다 새 배열이면 MapView가 fitBounds를 다시 해버린다
+  const points = useMemo(
+    () =>
+      dropStaleEchoes(
+        (data?.points ?? []).filter((p) => p.accuracy_m == null || p.accuracy_m <= TRACK_MAX_ACCURACY_M),
+      ),
+    [data],
   );
   // 진행 중 클러스터는 아직 저장 전이라 별도 표시 — 오늘 화면에서만 의미가 있다
   const ongoing = date === today ? (data?.ongoing ?? null) : null;
