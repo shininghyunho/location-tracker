@@ -37,6 +37,10 @@ function fmtTime(ts: string): string {
   return ts.slice(11, 16);
 }
 
+// 지도 궤적 전용 필터 — 실내 저품질 픽스(수십~수백 m 튐)가 선을 삐죽하게 만든다.
+// 체류 판정·통계는 원본 그대로 쓰고 표시만 거른다. null = 정보 없음(import 유래)이라 유지
+const TRACK_MAX_ACCURACY_M = 35;
+
 function fmtDuration(startTs: string, endTs: string): string {
   const min = Math.round((Date.parse(endTs) - Date.parse(startTs)) / 60_000);
   const h = Math.floor(min / 60);
@@ -53,7 +57,9 @@ function App() {
 
   const { data } = useDayTimeline(date);
   const stays = useMemo(() => data?.stays ?? [], [data]);
-  const points = data?.points ?? [];
+  const points = (data?.points ?? []).filter(
+    (p) => p.accuracy_m == null || p.accuracy_m <= TRACK_MAX_ACCURACY_M,
+  );
   // 진행 중 클러스터는 아직 저장 전이라 별도 표시 — 오늘 화면에서만 의미가 있다
   const ongoing = date === today ? (data?.ongoing ?? null) : null;
 
