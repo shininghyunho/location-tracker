@@ -185,9 +185,24 @@ export async function batchInsertStays(
   return inserted;
 }
 
+// label 바인드 1개 + id N개 ≤ 999(SQLite 변수 한도)라 넉넉히 500씩 끊는다
+const RELABEL_CHUNK = 500;
+
 export async function relabelNearbyUnlabeled(lat: number, lng: number, label: string): Promise<void> {
   const targets = (await getAllStays()).filter(
     (s) => s.label === null && haversineM(lat, lng, s.lat, s.lng) <= labelRadiusM,
   );
-  for (const t of targets) await updateStayLabel(t.id, label);
+  if (!isNative) {
+    for (const t of targets) await updateStayLabel(t.id, label);
+    return;
+  }
+  if (targets.length === 0) return;
+  const db = await getDb();
+  // 대상 id를 모아 한 번의 UPDATE로 — 대상마다 브릿지를 왕복하면 19개월치일 때 1~2초 걸린다
+  const ids = targets.map((t) => t.id);
+  for (let i = 0; i < ids.length; i += RELABEL_CHUNK) {
+    const chunk = ids.slice(i, i + RELABEL_CHUNK);
+    const placeholders = chunk.map(() => '?').join(', ');
+    await db.run(`UPDATE stays SET label = ? WHERE id IN (${placeholders})`, [label, ...chunk]);
+  }
 }
