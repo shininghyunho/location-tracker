@@ -36,10 +36,19 @@ export async function appLog(level: AppLogLevel, tag: string, message: string): 
   }
 }
 
-export async function getRecentLogs(limit = 100): Promise<AppLog[]> {
-  if (!isNative) return [...webLogs].reverse().slice(0, limit);
+// 커서(id) 기반 최신순 페이지 — OFFSET은 스크롤 중 새 로그가 끼어들면 행이 밀려 중복되므로 keyset을 쓴다
+export async function getLogsBefore(cursorId: number | null, limit = 100): Promise<AppLog[]> {
+  if (!isNative) {
+    return [...webLogs]
+      .reverse()
+      .filter((l) => cursorId === null || l.id < cursorId)
+      .slice(0, limit);
+  }
   const db = await getDb();
-  const res = await db.query('SELECT * FROM logs ORDER BY id DESC LIMIT ?', [limit]);
+  const res =
+    cursorId === null
+      ? await db.query('SELECT * FROM logs ORDER BY id DESC LIMIT ?', [limit])
+      : await db.query('SELECT * FROM logs WHERE id < ? ORDER BY id DESC LIMIT ?', [cursorId, limit]);
   return (res.values ?? []) as AppLog[];
 }
 
