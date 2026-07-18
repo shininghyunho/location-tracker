@@ -19,6 +19,7 @@ import { CalendarSheet } from './features/calendar/CalendarSheet';
 import { useSwipe } from './lib/useSwipe';
 import { importTimeline } from './features/import/importTimeline';
 import { ImportGuideSheet } from './features/import/ImportGuideSheet';
+import { AboutSheet } from './features/about/AboutSheet';
 import type { ImportProgress } from './features/import/importTimeline';
 import { appLog } from './db/logs';
 import { deleteStay, findNearestLabel, getDatesWithData, getLabelCoords } from './db/stays';
@@ -113,6 +114,7 @@ function App() {
   const [showPermRationale, setShowPermRationale] = useState(false);
   const [showCollector, setShowCollector] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [labelTarget, setLabelTarget] = useState<Stay | null>(null);
@@ -341,6 +343,16 @@ function App() {
                   >
                     로그
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setShowAbout(true);
+                    }}
+                    className="block w-full px-4 py-2 text-left text-sm text-slate-700"
+                  >
+                    앱 정보
+                  </button>
                 </div>
               </>
             )}
@@ -552,6 +564,7 @@ function App() {
         />
       )}
       {showLogs && <LogPanel onClose={() => setShowLogs(false)} />}
+      {showAbout && <AboutSheet onClose={() => setShowAbout(false)} />}
       {showStats && <StatsPanel onClose={() => setShowStats(false)} />}
       {labelTarget && <LabelSheet stay={labelTarget} onClose={() => setLabelTarget(null)} />}
     </div>
