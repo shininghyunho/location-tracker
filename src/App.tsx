@@ -11,6 +11,7 @@ import { LogPanel } from './features/logs/LogPanel';
 import { LabelSheet } from './features/stays/LabelSheet';
 import { StatsPanel } from './features/stats/StatsPanel';
 import { CalendarSheet } from './features/calendar/CalendarSheet';
+import { useSwipe } from './lib/useSwipe';
 import { importTimeline } from './features/import/importTimeline';
 import type { ImportProgress } from './features/import/importTimeline';
 import { appLog } from './db/logs';
@@ -83,6 +84,8 @@ function App() {
   const [labelTarget, setLabelTarget] = useState<Stay | null>(null);
   const [selected, setSelected] = useState<Stay | null>(null);
   const [ongoingSelected, setOngoingSelected] = useState(false);
+  // 날짜 변경 방향 — 새 날짜 콘텐츠가 이동 방향에서 밀려 들어오는 애니메이션에 쓴다 (초기 로드엔 없음)
+  const [slideDir, setSlideDir] = useState<'next' | 'prev' | null>(null);
   const cardRefs = useRef(new Map<number, HTMLLIElement>());
 
   // Android 하드웨어 뒤로가기: 열린 오버레이를 위에서부터 닫고, 없으면 종료 대신 백그라운드로
@@ -123,6 +126,7 @@ function App() {
 
   // 날짜를 옮기면 이전 날짜의 선택이 남지 않게 함께 해제한다
   const changeDate = (d: string) => {
+    setSlideDir(d > date ? 'next' : 'prev');
     setSelected(null);
     setOngoingSelected(false);
     setDate(d);
@@ -132,6 +136,14 @@ function App() {
     setOngoingSelected(false);
     setSelected(s);
   };
+
+  // 왼쪽 스와이프 = 다음날(미래는 ▶ 버튼과 동일하게 차단), 오른쪽 스와이프 = 전날
+  const swipeDate = useSwipe(
+    () => {
+      if (date < today) changeDate(addDays(date, 1));
+    },
+    () => changeDate(addDays(date, -1)),
+  );
 
   const onStayTap = (id: number) => {
     const stay = stays.find((s) => s.id === id);
@@ -196,7 +208,15 @@ function App() {
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col gap-3 bg-slate-50 p-4">
       <header className="flex items-center justify-between pt-6">
-        <h1 className="text-xl font-bold text-slate-900">위치 트래커</h1>
+        <h1>
+          <button
+            type="button"
+            onClick={() => changeDate(today)}
+            className="text-xl font-bold text-slate-900"
+          >
+            위치 트래커
+          </button>
+        </h1>
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -279,7 +299,10 @@ function App() {
         </p>
       )}
 
-      <div className="flex items-center justify-between rounded-lg bg-white p-2 shadow-sm">
+      <div
+        {...swipeDate}
+        className="flex items-center justify-between rounded-lg bg-white p-2 shadow-sm"
+      >
         <button type="button" onClick={() => changeDate(addDays(date, -1))} className="px-4 py-1 text-lg text-slate-600">
           ◀
         </button>
@@ -299,8 +322,20 @@ function App() {
 
       <MapView trackPoints={points} stays={stayMarkers} focus={focus} onStayTap={onStayTap} />
 
-      <ul className="flex flex-col gap-2">
-        {stays.map((s) => (
+      {/* grow로 남는 세로 공간까지 채워 카드 아래 빈 영역도 스와이프 대상이 되게 한다 */}
+      <div {...swipeDate} className="grow overflow-hidden">
+        {/* key={date}로 remount → 날짜가 바뀔 때마다 이동 방향의 slide-in이 한 번 재생된다 */}
+        <ul
+          key={date}
+          className={`flex flex-col gap-2 ${
+            slideDir === 'next'
+              ? 'animate-slide-in-right'
+              : slideDir === 'prev'
+                ? 'animate-slide-in-left'
+                : ''
+          }`}
+        >
+          {stays.map((s) => (
           <li
             key={s.id}
             ref={(el) => {
@@ -370,12 +405,13 @@ function App() {
           </li>
         )}
 
-        {stays.length === 0 && !ongoing && (
-          <li className="p-6 text-center text-sm text-slate-400">이 날짜의 체류 기록이 없습니다</li>
-        )}
-      </ul>
+          {stays.length === 0 && !ongoing && (
+            <li className="p-6 text-center text-sm text-slate-400">이 날짜의 체류 기록이 없습니다</li>
+          )}
+        </ul>
+      </div>
 
-      <footer className="mt-auto flex items-center justify-between pb-2 text-xs text-slate-400">
+      <footer className="flex items-center justify-between pb-2 text-xs text-slate-400">
         <span>누적 points {total.toLocaleString()}</span>
         <span>{isCollecting ? '수집 중 (1분 간격)' : '수집 꺼짐'}</span>
       </footer>
