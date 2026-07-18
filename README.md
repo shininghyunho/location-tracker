@@ -4,7 +4,7 @@
 
 ## 설치 (안드로이드)
 
-1. [최신 릴리스](https://github.com/shininghyunho/location-tracker/releases/latest)에서 `.apk` 파일을 폰으로 내려받는다. → [v0.1.0-beta 직접 다운로드](https://github.com/shininghyunho/location-tracker/releases/download/v0.1.0-beta/location-tracker-v0.1.0-beta.apk)
+1. [최신 릴리스](https://github.com/shininghyunho/location-tracker/releases/latest)에서 `.apk` 파일을 폰으로 내려받는다. → [v0.1.1-beta 직접 다운로드](https://github.com/shininghyunho/location-tracker/releases/download/v0.1.1-beta/location-tracker-v0.1.1-beta.apk)
 2. 받은 파일을 열어 설치한다. 처음이라면 "출처를 알 수 없는 앱 설치"를 허용해야 한다(설정 → 앱 → 이 브라우저/파일앱에 권한 부여).
 
 ## 시작하기
