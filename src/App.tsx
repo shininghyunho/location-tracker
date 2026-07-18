@@ -393,7 +393,7 @@ function App() {
             }}
             onClick={() => selectStay(selected?.id === s.id ? null : s)}
             className={`rounded-lg bg-white p-3 shadow-sm active:bg-slate-100 ${
-              selected?.id === s.id ? 'ring-2 ring-blue-500' : ''
+              selected?.id === s.id ? 'ring-2 ring-inset ring-blue-500' : ''
             }`}
           >
             <div className="flex items-baseline justify-between">
@@ -443,7 +443,7 @@ function App() {
               setOngoingSelected(!ongoingSelected);
             }}
             className={`rounded-lg border-2 border-blue-200 bg-white p-3 shadow-sm active:bg-slate-100 ${
-              ongoingSelected ? 'ring-2 ring-blue-500' : ''
+              ongoingSelected ? 'ring-2 ring-inset ring-blue-500' : ''
             }`}
           >
             <div className="flex items-baseline justify-between">
