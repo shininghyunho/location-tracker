@@ -241,7 +241,7 @@ function App() {
             onClick={() => changeDate(today)}
             className="text-xl font-bold text-slate-900"
           >
-            위치 트래커
+            위치트래커
           </button>
         </h1>
         <div className="flex items-center gap-2">
@@ -343,7 +343,7 @@ function App() {
               권한 다시 요청
             </button>
             <p className="mt-1.5 text-xs text-amber-600">
-              창이 안 뜨면 설정 &gt; 앱 &gt; 위치 트래커 &gt; 권한 &gt; 위치에서 ‘항상 허용’으로 바꿔주세요.
+              창이 안 뜨면 설정 &gt; 앱 &gt; 위치트래커 &gt; 권한 &gt; 위치에서 ‘항상 허용’으로 바꿔주세요.
             </p>
           </div>
         )}
