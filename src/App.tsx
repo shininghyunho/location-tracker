@@ -60,6 +60,8 @@ function App() {
   const stays = useMemo(() => data?.stays ?? [], [data]);
   // 진행 중 클러스터는 아직 저장 전이라 별도 표시 — 오늘 화면에서만 의미가 있다
   const ongoing = date === today ? (data?.ongoing ?? null) : null;
+  // 블랙아웃을 이어붙여 저장 체류로 흡수된 '진행 중' 체류 — 그 카드를 진행 중으로 그린다(오늘만)
+  const liveStayId = date === today ? (data?.liveStayId ?? null) : null;
 
   // 진행 중 위치가 저장된 장소 반경 안이면 '집(현재 위치)'처럼 이름으로 표기 — F5와 같은 findNearestLabel 재사용
   const { data: ongoingLabel = null } = useQuery({
@@ -389,7 +391,10 @@ function App() {
                 : ''
           }`}
         >
-          {stays.map((s) => (
+          {stays.map((s) => {
+          // 이어붙여 저장 체류로 흡수된 진행 중 체류면 '진행 중'으로 표시
+          const isLive = s.id === liveStayId;
+          return (
           <li
             key={s.id}
             ref={(el) => {
@@ -398,15 +403,20 @@ function App() {
             }}
             onClick={() => selectStay(selected?.id === s.id ? null : s)}
             className={`rounded-lg bg-white p-3 shadow-sm active:bg-slate-100 ${
-              selected?.id === s.id ? 'ring-2 ring-inset ring-blue-500' : ''
-            }`}
+              isLive ? 'border-2 border-blue-200' : ''
+            } ${selected?.id === s.id ? 'ring-2 ring-inset ring-blue-500' : ''}`}
           >
             <div className="flex items-baseline justify-between">
-              <span className="font-semibold text-slate-900">{s.label ?? '이름 없는 장소'}</span>
-              <span className="text-sm text-slate-500">{fmtDuration(s.start_ts, s.end_ts)}</span>
+              <span className={`font-semibold ${isLive ? 'text-blue-700' : 'text-slate-900'}`}>
+                {isLive ? (s.label ? `${s.label}(현재 위치)` : '지금 여기') : (s.label ?? '이름 없는 장소')}
+              </span>
+              <span className="text-sm text-slate-500">
+                {fmtDuration(s.start_ts, s.end_ts)}
+                {isLive ? '째' : ''}
+              </span>
             </div>
             <div className="text-sm text-slate-500">
-              {fmtTime(s.start_ts)} ~ {fmtTime(s.end_ts)}
+              {fmtTime(s.start_ts)} ~ {isLive ? '진행 중' : fmtTime(s.end_ts)}
             </div>
             {/* 좌표는 매일 보는 정보가 아니라서 펼쳤을 때만 (U19) */}
             {selected?.id === s.id && (
@@ -439,7 +449,8 @@ function App() {
               </>
             )}
           </li>
-        ))}
+          );
+        })}
 
         {ongoing && (
           <li
