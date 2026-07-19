@@ -11,6 +11,7 @@ import {
 } from './period';
 import type { PeriodUnit } from './period';
 import { computeStats, UNLABELED } from './computeStats';
+import { PlaceCalendar } from './PlaceCalendar';
 import { useSwipe } from '../../lib/useSwipe';
 
 const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
@@ -192,7 +193,12 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
                     style={{ width: `${(p.durationMs / topDuration) * 100}%` }}
                   />
                 </div>
-                {expanded === p.key && <Heatmap grid={stats.heatmap[p.key]} />}
+                {expanded === p.key && (
+                  <>
+                    <Heatmap grid={stats.heatmap[p.key]} />
+                    {p.key !== UNLABELED && <PlaceCalendar label={p.key} />}
+                  </>
+                )}
               </li>
             ))}
             {stats.places.length === 0 && (
