@@ -21,16 +21,19 @@ export type NewStay = Omit<Stay, 'id' | 'deleted'>;
 const isNative = Capacitor.isNativePlatform();
 const webStays: Stay[] = [];
 
-export async function insertStay(s: NewStay): Promise<void> {
+// 새로 생긴 row의 id를 돌려준다 — 진행 중 클러스터를 즉시 저장하고 그 stay로 라벨 시트를 열 때 쓴다
+export async function insertStay(s: NewStay): Promise<number> {
   if (!isNative) {
-    webStays.push({ ...s, id: webStays.length + 1, deleted: 0 });
-    return;
+    const id = webStays.length + 1;
+    webStays.push({ ...s, id, deleted: 0 });
+    return id;
   }
   const db = await getDb();
-  await db.run(
+  const res = await db.run(
     'INSERT INTO stays (start_ts, end_ts, lat, lng, label, source) VALUES (?, ?, ?, ?, ?, ?)',
     [s.start_ts, s.end_ts, s.lat, s.lng, s.label, s.source],
   );
+  return res.changes?.lastId ?? -1;
 }
 
 // 증분 판정의 커서 — 이 시각 이후의 points만 다시 판정하면 된다.

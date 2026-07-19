@@ -20,7 +20,7 @@ import { ImportGuideSheet } from './features/import/ImportGuideSheet';
 import { AboutSheet } from './features/about/AboutSheet';
 import type { ImportProgress } from './features/import/importTimeline';
 import { appLog } from './lib/appLog';
-import { deleteStay, findNearestLabel, getDatesWithData, getLabelCoords } from './db/stays';
+import { deleteStay, findNearestLabel, getDatesWithData, getLabelCoords, insertStay } from './db/stays';
 import type { Stay } from './db/stays';
 import { countPoints } from './db/points';
 
@@ -206,6 +206,34 @@ function App() {
     if (!window.confirm('이 체류 기록을 삭제할까요?')) return;
     await deleteStay(s.id);
     setSelected(null);
+    invalidate();
+  };
+
+  // 진행 중(저장 전) 카드의 '수정': 이미 체류 자격(≥minDuration)을 갖춘 클러스터를
+  // 지금 체류로 확정해 그 stay로 라벨 시트를 연다. 저장 뒤엔 다음 재계산이 liveStayId로
+  // 인수해 계속 '진행 중'으로 연장되므로 중복 카드는 생기지 않는다.
+  const onLabelOngoing = async () => {
+    if (!ongoing) return;
+    const label = await findNearestLabel(ongoing.lat, ongoing.lng);
+    const id = await insertStay({
+      start_ts: ongoing.startTs,
+      end_ts: ongoing.endTs,
+      lat: ongoing.lat,
+      lng: ongoing.lng,
+      label,
+      source: 'collector',
+    });
+    setOngoingSelected(false);
+    setLabelTarget({
+      id,
+      start_ts: ongoing.startTs,
+      end_ts: ongoing.endTs,
+      lat: ongoing.lat,
+      lng: ongoing.lng,
+      label,
+      source: 'collector',
+      deleted: 0,
+    });
     invalidate();
   };
   const [importing, setImporting] = useState<ImportProgress | null>(null);
@@ -469,10 +497,25 @@ function App() {
               <span className="text-sm text-slate-500">{fmtDuration(ongoing.startTs, ongoing.endTs)}째</span>
             </div>
             <div className="text-sm text-slate-500">{fmtTime(ongoing.startTs)} ~ 진행 중</div>
+            {/* 삭제는 없다 — 저장 전이라 지울 row가 없고, 그 자리에 있는 한 재계산으로 곧 다시 뜬다 */}
             {ongoingSelected && (
-              <div className="pt-1 text-xs text-slate-400">
-                {ongoing.lat.toFixed(5)}, {ongoing.lng.toFixed(5)}
-              </div>
+              <>
+                <div className="pt-1 text-xs text-slate-400">
+                  {ongoing.lat.toFixed(5)}, {ongoing.lng.toFixed(5)}
+                </div>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onLabelOngoing();
+                    }}
+                    className="w-full rounded-md bg-blue-50 py-2 text-sm font-semibold text-blue-700"
+                  >
+                    수정
+                  </button>
+                </div>
+              </>
             )}
           </li>
         )}
