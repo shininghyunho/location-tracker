@@ -6,9 +6,11 @@ export interface StayParams {
   minDurationMs: number;
   graceMs: number; // 반경 밖 연속 체류가 이보다 짧으면 이탈로 보지 않고 흡수(blip)
   maxAccuracyM: number; // 이보다 부정확한 점은 판정 전 제외
-  // 반경 안이라도 직전 점과 이만큼 시간이 벌어지면 수집 블랙아웃(앱 꺼짐 등)으로 보고
-  // 체류를 나눈다. 단 이미 쌓인 쪽이 유효 체류일 때만 — 아니면 병합해 밤샘 체류 소실 방지
-  maxGapMs: number;
+  // 정지 중엔 수집 엔진이 GPS를 꺼(배터리 절약) 점이 안 쌓인다. 같은 장소에서 이만큼까지
+  // 벌어진 공백은 "계속 머문 것"으로 보고 한 체류로 잇는다 — 그동안 이동했다면 모션 감지로
+  // 점이 남았을 것이기에, 같은 장소의 공백은 이탈이 아닌 정지의 증거다. 이보다 길면
+  // 수집 자체가 죽은 것(폰 꺼짐 등)으로 보고 연속을 주장하지 않는다.
+  bridgeMaxGapMs: number;
 }
 
 export const DEFAULT_STAY_PARAMS: StayParams = {
@@ -16,7 +18,7 @@ export const DEFAULT_STAY_PARAMS: StayParams = {
   minDurationMs: 10 * 60_000,
   graceMs: 5 * 60_000,
   maxAccuracyM: 100,
-  maxGapMs: 3 * 3_600_000, // 이동 집계의 MOVE_MAX_GAP_MS와 같은 블랙아웃 정의(3h)
+  bridgeMaxGapMs: 16 * 3_600_000, // 밤샘 정지는 덮되(수면+아침 여유) 하루 미만 — 그 이상은 수집 사망
 };
 
 export interface StayDraft {
@@ -76,10 +78,10 @@ export function detectStays(points: Point[], params: StayParams = DEFAULT_STAY_P
     const c = centroid(cluster);
     if (haversineM(c.lat, c.lng, p.lat, p.lng) <= params.radiusM) {
       outRunFirstTs = null; // 복귀 → 유예 구간 리셋
-      // 반경 안이라도 직전 점과 공백이 크면 블랙아웃 — 쌓인 쪽이 유효 체류일 때만 끊는다
-      // (미달이면 병합: 점 드문 밤샘 체류가 조각나 통째 사라지는 것 방지)
+      // 같은 장소라도 공백이 이어붙이기 한도를 넘으면 수집 사망으로 보고 끊는다
+      // (쌓인 쪽이 유효 체류일 때만 — 미달이면 병합해 조각난 체류 소실 방지)
       const gap = Date.parse(p.ts) - Date.parse(cluster.points.at(-1)!.ts);
-      if (gap > params.maxGapMs && durationMs(cluster) >= params.minDurationMs) {
+      if (gap > params.bridgeMaxGapMs && durationMs(cluster) >= params.minDurationMs) {
         finalized.push(toDraft(cluster));
         cluster = { points: [p], latSum: p.lat, lngSum: p.lng };
         continue;

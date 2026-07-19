@@ -45,6 +45,32 @@ export async function getLastCollectorStayEnd(): Promise<string | null> {
   return (res.values?.[0]?.last ?? null) as string | null;
 }
 
+// 블랙아웃 이어붙이기용 — end_ts가 가장 늦은 collector 체류(삭제분 포함, 커서와 일치시키려고).
+// 이어붙일지는 호출부가 deleted를 보고 판단한다 — 지운 체류를 되살려선 안 된다.
+export async function getLastCollectorStay(): Promise<Stay | null> {
+  if (!isNative) {
+    const collector = webStays.filter((s) => s.source === 'collector');
+    if (!collector.length) return null;
+    return collector.reduce((a, b) => (a.end_ts >= b.end_ts ? a : b));
+  }
+  const db = await getDb();
+  const res = await db.query(
+    "SELECT * FROM stays WHERE source = 'collector' ORDER BY end_ts DESC LIMIT 1",
+  );
+  return (res.values?.[0] ?? null) as Stay | null;
+}
+
+// 이어붙이기: 정지 공백 뒤 같은 장소 재수집이면 직전 체류의 끝을 늘린다
+export async function updateStayEnd(id: number, endTs: string): Promise<void> {
+  if (!isNative) {
+    const target = webStays.find((s) => s.id === id);
+    if (target) target.end_ts = endTs;
+    return;
+  }
+  const db = await getDb();
+  await db.run('UPDATE stays SET end_ts = ? WHERE id = ?', [endTs, id]);
+}
+
 export async function getAllStays(): Promise<Stay[]> {
   if (!isNative) {
     return webStays.filter((s) => !s.deleted).sort((a, b) => (a.start_ts < b.start_ts ? -1 : 1));
@@ -54,17 +80,19 @@ export async function getAllStays(): Promise<Stay[]> {
   return (res.values ?? []) as Stay[];
 }
 
-// ts가 로컬 오프셋 ISO 문자열이라 날짜는 앞 10자리 비교로 충분하다
+// ts가 로컬 오프셋 ISO 문자열이라 날짜는 앞 10자리 비교로 충분하다.
+// 시작일만 보면 자정 넘긴 체류가 종료일 화면에서 빠진다(달력 점은 찍히는데 목록은 빔).
+// 그래서 date에 '걸친' 체류를 모두 반환한다 — 시작일 ≤ date ≤ 종료일.
 export async function getStaysByDate(date: string): Promise<Stay[]> {
   if (!isNative) {
     return webStays
-      .filter((s) => !s.deleted && s.start_ts.startsWith(date))
+      .filter((s) => !s.deleted && s.start_ts.slice(0, 10) <= date && s.end_ts.slice(0, 10) >= date)
       .sort((a, b) => (a.start_ts < b.start_ts ? -1 : 1));
   }
   const db = await getDb();
   const res = await db.query(
-    'SELECT * FROM stays WHERE deleted = 0 AND substr(start_ts, 1, 10) = ? ORDER BY start_ts',
-    [date],
+    'SELECT * FROM stays WHERE deleted = 0 AND substr(start_ts, 1, 10) <= ? AND substr(end_ts, 1, 10) >= ? ORDER BY start_ts',
+    [date, date],
   );
   return (res.values ?? []) as Stay[];
 }
