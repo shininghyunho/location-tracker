@@ -134,6 +134,26 @@ export async function getDatesWithData(): Promise<string[]> {
   return [...days];
 }
 
+// 장소별 방문 달력용 — [fromTs, toTs) 안에서 이 라벨을 방문한 날(중복 없음).
+// 자정 넘긴 체류는 걸친 날 모두 찍되(getDatesWithData와 동일) 요청한 달 밖 날은 뺀다
+export async function getVisitDaysByLabel(
+  label: string,
+  fromTs: string,
+  toTs: string,
+): Promise<string[]> {
+  const fromDay = fromTs.slice(0, 10);
+  const toDay = toTs.slice(0, 10); // 배타 — 다음 달 1일
+  const days = new Set<string>();
+  for (const s of await getStaysByRange(fromTs, toTs)) {
+    if (s.label !== label) continue;
+    const last = s.end_ts.slice(0, 10);
+    for (let d = s.start_ts.slice(0, 10); d <= last; d = addDaysStr(d, 1)) {
+      if (d >= fromDay && d < toDay) days.add(d);
+    }
+  }
+  return [...days];
+}
+
 export async function deleteStay(id: number): Promise<void> {
   if (!isNative) {
     const target = webStays.find((s) => s.id === id);
@@ -210,6 +230,38 @@ export async function getNearbyLabels(lat: number, lng: number): Promise<string[
     .filter((s) => haversineM(lat, lng, s.lat, s.lng) <= labelRadiusM)
     .map((s) => s.label!);
   return [...new Set(labels)];
+}
+
+// 입력 중 자동완성용 — 근처(getNearbyLabels)와 달리 좌표 무관 전체 라벨
+export async function getAllLabels(): Promise<string[]> {
+  if (!isNative) {
+    return [...new Set(webStays.filter((s) => !s.deleted && s.label !== null).map((s) => s.label!))];
+  }
+  const db = await getDb();
+  const res = await db.query(
+    'SELECT DISTINCT label FROM stays WHERE deleted = 0 AND label IS NOT NULL ORDER BY label',
+  );
+  return ((res.values ?? []) as { label: string }[]).map((r) => r.label);
+}
+
+// 겹침 판정용 — 저장하려는 이름을 이미 다른 체류가 쓰고 있으면 합쳐진다고 알린다
+export async function countStaysByLabel(label: string): Promise<number> {
+  if (!isNative) return webStays.filter((s) => !s.deleted && s.label === label).length;
+  const db = await getDb();
+  const res = await db.query('SELECT COUNT(*) AS n FROM stays WHERE deleted = 0 AND label = ?', [
+    label,
+  ]);
+  return (res.values?.[0]?.n ?? 0) as number;
+}
+
+// 이름 기준 통일 — 좌표와 무관하게 같은 이름을 쓰던 체류를 한꺼번에 바꾼다
+export async function relabelByName(oldLabel: string, newLabel: string): Promise<void> {
+  if (!isNative) {
+    for (const s of webStays) if (!s.deleted && s.label === oldLabel) s.label = newLabel;
+    return;
+  }
+  const db = await getDb();
+  await db.run('UPDATE stays SET label = ? WHERE deleted = 0 AND label = ?', [newLabel, oldLabel]);
 }
 
 // F6 배치 삽입 — batchInsertPoints와 같은 구조. 행당 바인드 6개 × 150 = 900 ≤ 999.
