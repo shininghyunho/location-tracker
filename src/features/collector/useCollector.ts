@@ -99,6 +99,9 @@ export function useCollector(onPointSaved: () => void) {
         heartbeatInterval: SAVE_INTERVAL_MS / 1000,
         stopOnTerminate: false, // 앱을 스와이프로 꺼도 수집 유지
         startOnBoot: true, // 재부팅 후 자동 재개
+        // 앱 프로세스가 죽으면 이 JS가 없어 heartbeat가 통째로 버려진다(skip heartbeat).
+        // 정지 중 위치는 heartbeat로만 남으므로, 네이티브 HeadlessTask가 대신 받게 한다
+        enableHeadless: true,
         notification: { title: '위치 수집 중', text: '이동 기록을 저장하고 있습니다.' },
       },
       // 플러그인 네이티브 로그(서비스 생존·권한·위치 요청 내부)를 SQLite에 남긴다 — 로그 화면에서 공유 가능
