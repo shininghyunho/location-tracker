@@ -58,10 +58,15 @@ function App() {
 
   const { data } = useDayTimeline(date);
   const stays = useMemo(() => data?.stays ?? [], [data]);
-  // 진행 중 클러스터는 아직 저장 전이라 별도 표시 — 오늘 화면에서만 의미가 있다
-  const ongoing = date === today ? (data?.ongoing ?? null) : null;
-  // 블랙아웃을 이어붙여 저장 체류로 흡수된 '진행 중' 체류 — 그 카드를 진행 중으로 그린다(오늘만)
-  const liveStayId = date === today ? (data?.liveStayId ?? null) : null;
+  // 진행 중 클러스터는 아직 저장 전이라 별도 표시 — 걸친 날짜(시작일~오늘) 모두에 띄운다.
+  // 오늘로만 한정하면 자정 넘긴 체류(집 귀가 등)가 시작일 화면에서 사라진다
+  const ongoing =
+    data?.ongoing != null && data.ongoing.startTs.slice(0, 10) <= date && date <= today
+      ? data.ongoing
+      : null;
+  // 블랙아웃을 이어붙여 저장 체류로 흡수된 '진행 중' 체류 — 그 카드를 진행 중으로 그린다.
+  // 저장 체류는 걸친 날짜에만 조회되므로(getStaysByDate overlap) 날짜 게이트가 따로 필요 없다
+  const liveStayId = data?.liveStayId ?? null;
 
   // 진행 중 위치가 저장된 장소 반경 안이면 '집(현재 위치)'처럼 이름으로 표기 — F5와 같은 findNearestLabel 재사용
   const { data: ongoingLabel = null } = useQuery({
