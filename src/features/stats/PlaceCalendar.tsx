@@ -3,7 +3,8 @@ import type { TouchEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getVisitDaysByLabel } from '../../db/stays';
 import { buildMonthGrid } from '../calendar/monthGrid';
-import { periodRange, shiftPeriod, startOfPeriod, todayStr } from './period';
+import { periodRange, shiftPeriod, startOfPeriod } from './period';
+import { todayStr } from '../../lib/date';
 import { longestStreak } from './attendance';
 import { useSwipe } from '../../lib/useSwipe';
 

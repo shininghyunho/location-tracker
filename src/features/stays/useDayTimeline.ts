@@ -9,8 +9,10 @@ import {
   updateStayEnd,
 } from '../../db/stays';
 import type { Stay } from '../../db/stays';
-import { DEFAULT_STAY_PARAMS, detectStays, haversineM } from './detectStays';
+import { detectStays } from './detectStays';
 import type { StayDraft } from './detectStays';
+import { DEFAULT_STAY_PARAMS } from './stayParams';
+import { haversineM } from '../../lib/geo';
 
 // 정지 중 수집 블랙아웃 이어붙이기 판정: 새 클러스터가 직전 체류와 같은 장소이고
 // 공백이 한도 이내면 "계속 머문 것"이다. 그동안 이동했다면 모션 감지로 점이 남았을 것.

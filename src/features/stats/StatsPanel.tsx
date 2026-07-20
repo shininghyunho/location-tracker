@@ -7,9 +7,9 @@ import {
   periodRange,
   shiftPeriod,
   startOfPeriod,
-  todayStr,
 } from './period';
 import type { PeriodUnit } from './period';
+import { fmtDuration, todayStr } from '../../lib/date';
 import { computeStats, UNLABELED } from './computeStats';
 import { PlaceCalendar } from './PlaceCalendar';
 import { useSwipe } from '../../lib/useSwipe';
@@ -19,12 +19,6 @@ const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
 // 랭킹 상위 4곳은 고정 색, 나머지는 회색 '기타'(설계 §2)
 const PLACE_COLORS = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-violet-500'];
 const ETC_COLOR = 'bg-slate-300';
-
-function fmtDur(ms: number): string {
-  const min = Math.round(ms / 60_000);
-  const h = Math.floor(min / 60);
-  return h > 0 ? `${h}시간 ${min % 60}분` : `${min}분`;
-}
 
 function Heatmap({ grid }: { grid: number[][] }) {
   const maxCell = Math.max(1, ...grid.flat());
@@ -184,7 +178,7 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
                     {p.key}
                   </span>
                   <span className="text-slate-500">
-                    {fmtDur(p.durationMs)} · {p.visitCount}회
+                    {fmtDuration(p.durationMs)} · {p.visitCount}회
                   </span>
                 </div>
                 <div className="mt-1 h-2 rounded bg-slate-100">
@@ -248,7 +242,7 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
           <h3 className="pb-1 text-sm font-bold text-slate-900">이동</h3>
           {stats.move.count > 0 ? (
             <p>
-              {stats.move.count}회 · {fmtDur(stats.move.totalMs)} ·{' '}
+              {stats.move.count}회 · {fmtDuration(stats.move.totalMs)} ·{' '}
               {(stats.move.distanceM / 1000).toFixed(1)}km(직선)
             </p>
           ) : (

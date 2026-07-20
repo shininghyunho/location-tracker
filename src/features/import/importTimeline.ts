@@ -1,7 +1,8 @@
 import { batchInsertPoints, getFirstCollectorPointTs } from '../../db/points';
 import { batchInsertStays, getAllStays } from '../../db/stays';
 import type { NewStay, Stay } from '../../db/stays';
-import { DEFAULT_STAY_PARAMS, haversineM } from '../stays/detectStays';
+import { DEFAULT_STAY_PARAMS } from '../stays/stayParams';
+import { haversineM } from '../../lib/geo';
 import { parseTimeline } from './parseTimeline';
 
 export interface ImportProgress {

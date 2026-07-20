@@ -1,5 +1,5 @@
 import type { Point } from '../../db/points';
-import { haversineM } from '../stays/detectStays';
+import { haversineM } from '../../lib/geo';
 
 // 이동 중 오래된 캐시 위치(stale 픽스)가 최신 픽스처럼 끼어들어 궤적이 역주행 지그재그를 그린다.
 // stale 픽스 = 방금 지나온 위치의 메아리 — 그 정의로 거른다:

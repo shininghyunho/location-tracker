@@ -1,28 +1,7 @@
+import { addDaysStr, dayStartTs, toDate, toDateStr } from '../../lib/date';
+
 // 기간 경계를 ts와 같은 +09:00 고정 포맷 문자열로 만들어 사전순 비교로 자른다 — 단일 타임존 가정(설계 §3)
 export type PeriodUnit = 'week' | 'month';
-
-// 정오 기준 Date — 자정 기준이면 타임존 경계에서 날짜가 밀릴 수 있다
-function toDate(dateStr: string): Date {
-  return new Date(`${dateStr}T12:00:00`);
-}
-
-function toDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-export function todayStr(): string {
-  return toDateStr(new Date());
-}
-
-export function addDaysStr(dateStr: string, delta: number): string {
-  const d = toDate(dateStr);
-  d.setDate(d.getDate() + delta);
-  return toDateStr(d);
-}
-
-export function dayStartTs(dateStr: string): string {
-  return `${dateStr}T00:00:00.000+09:00`;
-}
 
 // 주는 월요일 시작(설계 §결정 표)
 export function startOfPeriod(unit: PeriodUnit, dateStr: string): string {

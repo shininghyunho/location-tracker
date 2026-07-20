@@ -1,4 +1,4 @@
-import { addDaysStr } from './period';
+import { addDaysStr } from '../../lib/date';
 
 // 방문일 목록에서 연속된 날의 최장 길이 — 하루라도 비면 끊긴다
 export function longestStreak(days: string[]): number {

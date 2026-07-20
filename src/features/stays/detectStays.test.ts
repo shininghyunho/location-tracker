@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { detectStays, DEFAULT_STAY_PARAMS } from './detectStays';
+import { detectStays } from './detectStays';
+import { DEFAULT_STAY_PARAMS } from './stayParams';
 import type { Point } from '../../db/points';
 
 // 본가 좌표, 그리고 반경 밖으로 확실히 벗어난 좌표(약 15km)

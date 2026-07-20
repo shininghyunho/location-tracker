@@ -1,7 +1,8 @@
 import { Capacitor } from '@capacitor/core';
 import { getDb } from './client';
-import { DEFAULT_STAY_PARAMS, haversineM } from '../features/stays/detectStays';
-import { addDaysStr } from '../features/stats/period';
+import { DEFAULT_STAY_PARAMS } from '../features/stays/stayParams';
+import { haversineM } from '../lib/geo';
+import { addDaysStr } from '../lib/date';
 
 export interface Stay {
   id: number;

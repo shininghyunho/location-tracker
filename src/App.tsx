@@ -20,19 +20,10 @@ import { ImportGuideSheet } from './features/import/ImportGuideSheet';
 import { AboutSheet } from './features/about/AboutSheet';
 import type { ImportProgress } from './features/import/importTimeline';
 import { appLog } from './lib/appLog';
+import { addDaysStr, fmtDuration, todayStr } from './lib/date';
 import { deleteStay, findNearestLabel, getDatesWithData, getLabelCoords, insertStay } from './db/stays';
 import type { Stay } from './db/stays';
 import { countPoints } from './db/points';
-
-function localDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function addDays(date: string, delta: number): string {
-  const d = new Date(`${date}T12:00:00`);
-  d.setDate(d.getDate() + delta);
-  return localDateStr(d);
-}
 
 function fmtTime(ts: string): string {
   return ts.slice(11, 16);
@@ -42,15 +33,9 @@ function fmtTime(ts: string): string {
 // 체류 판정·통계는 원본 그대로 쓰고 표시만 거른다. null = 정보 없음(import 유래)이라 유지
 const TRACK_MAX_ACCURACY_M = 35;
 
-function fmtDuration(startTs: string, endTs: string): string {
-  const min = Math.round((Date.parse(endTs) - Date.parse(startTs)) / 60_000);
-  const h = Math.floor(min / 60);
-  return h > 0 ? `${h}시간 ${min % 60}분` : `${min}분`;
-}
-
 function App() {
   const queryClient = useQueryClient();
-  const today = localDateStr(new Date());
+  const today = todayStr();
   const [date, setDate] = useState(today);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['timeline'] });
@@ -195,9 +180,9 @@ function App() {
   // 왼쪽 스와이프 = 다음날(미래는 ▶ 버튼과 동일하게 차단), 오른쪽 스와이프 = 전날
   const swipeDate = useSwipe(
     () => {
-      if (date < today) changeDate(addDays(date, 1));
+      if (date < today) changeDate(addDaysStr(date, 1));
     },
-    () => changeDate(addDays(date, -1)),
+    () => changeDate(addDaysStr(date, -1)),
   );
 
   const onStayTap = (id: number) => {
@@ -392,7 +377,7 @@ function App() {
         {...swipeDate}
         className="flex items-center justify-between rounded-lg bg-white p-2 shadow-sm"
       >
-        <button type="button" onClick={() => changeDate(addDays(date, -1))} className="px-4 py-1 text-lg text-slate-600">
+        <button type="button" onClick={() => changeDate(addDaysStr(date, -1))} className="px-4 py-1 text-lg text-slate-600">
           ◀
         </button>
         <button type="button" onClick={() => setShowCalendar(true)} className="text-sm font-semibold text-slate-900">
@@ -401,7 +386,7 @@ function App() {
         </button>
         <button
           type="button"
-          onClick={() => changeDate(addDays(date, 1))}
+          onClick={() => changeDate(addDaysStr(date, 1))}
           disabled={date >= today}
           className="px-4 py-1 text-lg text-slate-600 disabled:text-slate-300"
         >
@@ -444,7 +429,7 @@ function App() {
                 {isLive ? (s.label ? `${s.label}(현재 위치)` : '지금 여기') : (s.label ?? '이름 없는 장소')}
               </span>
               <span className="text-sm text-slate-500">
-                {fmtDuration(s.start_ts, s.end_ts)}
+                {fmtDuration(Date.parse(s.end_ts) - Date.parse(s.start_ts))}
                 {isLive ? '째' : ''}
               </span>
             </div>
@@ -499,7 +484,9 @@ function App() {
               <span className="font-semibold text-blue-700">
                 {ongoingLabel ? `${ongoingLabel}(현재 위치)` : '지금 여기'}
               </span>
-              <span className="text-sm text-slate-500">{fmtDuration(ongoing.startTs, ongoing.endTs)}째</span>
+              <span className="text-sm text-slate-500">
+                {fmtDuration(Date.parse(ongoing.endTs) - Date.parse(ongoing.startTs))}째
+              </span>
             </div>
             <div className="text-sm text-slate-500">{fmtTime(ongoing.startTs)} ~ 진행 중</div>
             {/* 삭제는 없다 — 저장 전이라 지울 row가 없고, 그 자리에 있는 한 재계산으로 곧 다시 뜬다 */}
