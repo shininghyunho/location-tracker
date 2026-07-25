@@ -1,7 +1,8 @@
 import { batchInsertPoints, getFirstCollectorPointTs } from '../../db/points';
 import { batchInsertStays, getAllStays } from '../../db/stays';
-import type { NewStay, Stay } from '../../db/stays';
+import type { NewStay } from '../../db/stays';
 import { DEFAULT_STAY_PARAMS } from '../stays/stayParams';
+import { nearestLabelIn } from '../stays/nearestLabel';
 import { haversineM } from '../../lib/geo';
 import { parseTimeline } from './parseTimeline';
 
@@ -14,19 +15,6 @@ export interface ImportProgress {
 export interface ImportResult {
   pointCount: number;
   stayCount: number;
-}
-
-// stay마다 findNearestLabel(매번 전체 DB 조회)을 부르면 수천 번 반복되므로
-// 라벨 있는 stay를 한 번만 로드해 메모리에서 최근접을 찾는다
-function nearestLabel(labeled: Stay[], lat: number, lng: number): string | null {
-  let best: { label: string; dist: number } | null = null;
-  for (const s of labeled) {
-    const dist = haversineM(lat, lng, s.lat, s.lng);
-    if (dist <= DEFAULT_STAY_PARAMS.radiusM && (!best || dist < best.dist)) {
-      best = { label: s.label!, dist };
-    }
-  }
-  return best?.label ?? null;
 }
 
 // 구글이 같은 장소의 연속 체류를 visit 여러 개로 쪼개 줄 때가 있어 하나로 합친다.
@@ -66,8 +54,10 @@ export async function importTimeline(
   const mergedStays = mergeContiguousStays(parsed.stays);
   const stays = cutoff ? mergedStays.filter((s) => s.end_ts <= cutoff) : mergedStays;
 
+  // stay마다 findNearestLabel(매번 전체 DB 조회)을 부르면 수천 번 반복되므로
+  // 라벨 있는 stay를 한 번만 로드해 메모리에서 최근접을 찾는다
   const labeled = (await getAllStays()).filter((s) => s.label !== null);
-  for (const s of stays) s.label = nearestLabel(labeled, s.lat, s.lng);
+  for (const s of stays) s.label = nearestLabelIn(labeled, s.lat, s.lng);
 
   const total = points.length + stays.length;
   let done = 0;

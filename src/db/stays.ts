@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { getDb } from './client';
 import { DEFAULT_STAY_PARAMS } from '../features/stays/stayParams';
+import { nearestLabelIn } from '../features/stays/nearestLabel';
 import { haversineM } from '../lib/geo';
 import { addDaysStr } from '../lib/date';
 
@@ -191,12 +192,7 @@ export async function updateStayLabel(id: number, label: string | null): Promise
 
 // 반경 내 라벨된 stay 중 가장 가까운 것의 라벨 — 새 stay 확정 시 자동 상속용
 export async function findNearestLabel(lat: number, lng: number): Promise<string | null> {
-  let best: { label: string; dist: number } | null = null;
-  for (const s of await getLabeledStays()) {
-    const dist = haversineM(lat, lng, s.lat, s.lng);
-    if (dist <= labelRadiusM && (!best || dist < best.dist)) best = { label: s.label!, dist };
-  }
-  return best?.label ?? null;
+  return nearestLabelIn(await getLabeledStays(), lat, lng);
 }
 
 // 라벨별 대표 좌표(평균) — stay마다 중심점이 산포해 같은 장소가 지도에 여러 곳으로 찍히는 것을 표시 단계에서 스냅
