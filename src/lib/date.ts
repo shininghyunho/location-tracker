@@ -19,6 +19,12 @@ export function addDaysStr(dateStr: string, delta: number): string {
   return toDateStr(d);
 }
 
+const DAY_NAMES = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+
+export function fmtDateWithDay(dateStr: string): string {
+  return `${dateStr}(${DAY_NAMES[toDate(dateStr).getDay()]})`;
+}
+
 export function dayStartTs(dateStr: string): string {
   return `${dateStr}T00:00:00.000+09:00`;
 }

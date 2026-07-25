@@ -20,7 +20,7 @@ import { ImportGuideSheet } from './features/import/ImportGuideSheet';
 import { AboutSheet } from './features/about/AboutSheet';
 import type { ImportProgress } from './features/import/importTimeline';
 import { appLog } from './lib/appLog';
-import { addDaysStr, fmtDuration, todayStr } from './lib/date';
+import { addDaysStr, fmtDateWithDay, fmtDuration, todayStr } from './lib/date';
 import { deleteStay, findNearestLabel, getDatesWithData, getLabelCoords, insertStay } from './db/stays';
 import type { Stay } from './db/stays';
 import { countPoints } from './db/points';
@@ -381,7 +381,7 @@ function App() {
           ◀
         </button>
         <button type="button" onClick={() => setShowCalendar(true)} className="text-sm font-semibold text-slate-900">
-          {date}
+          {fmtDateWithDay(date)}
           {date === today && <span className="ml-1 text-blue-600">(오늘)</span>}
         </button>
         <button
