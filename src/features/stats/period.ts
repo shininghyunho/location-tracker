@@ -1,10 +1,11 @@
 import { addDaysStr, dayStartTs, toDate, toDateStr } from '../../lib/date';
 
 // 기간 경계를 ts와 같은 +09:00 고정 포맷 문자열로 만들어 사전순 비교로 자른다 — 단일 타임존 가정(설계 §3)
-export type PeriodUnit = 'week' | 'month';
+export type PeriodUnit = 'week' | 'month' | 'year';
 
 // 주는 월요일 시작(설계 §결정 표)
 export function startOfPeriod(unit: PeriodUnit, dateStr: string): string {
+  if (unit === 'year') return `${dateStr.slice(0, 4)}-01-01`;
   if (unit === 'month') return `${dateStr.slice(0, 7)}-01`;
   const d = toDate(dateStr);
   const fromMonday = (d.getDay() + 6) % 7;
@@ -14,6 +15,7 @@ export function startOfPeriod(unit: PeriodUnit, dateStr: string): string {
 
 export function shiftPeriod(unit: PeriodUnit, anchor: string, delta: number): string {
   if (unit === 'week') return addDaysStr(anchor, delta * 7);
+  if (unit === 'year') return `${Number(anchor.slice(0, 4)) + delta}-01-01`;
   const d = toDate(anchor);
   d.setMonth(d.getMonth() + delta);
   return startOfPeriod('month', toDateStr(d));
@@ -29,6 +31,7 @@ export function periodRange(unit: PeriodUnit, anchor: string): PeriodRange {
 }
 
 export function periodLabel(unit: PeriodUnit, anchor: string): string {
+  if (unit === 'year') return `${anchor.slice(0, 4)}년`;
   if (unit === 'month') return anchor.slice(0, 7);
   return `${anchor} ~ ${addDaysStr(anchor, 6).slice(5)}`;
 }

@@ -34,6 +34,28 @@ function weekdayIdx(dateStr: string): number {
   return (new Date(`${dateStr}T12:00:00`).getDay() + 6) % 7;
 }
 
+export interface MoveSegment {
+  startTs: string;
+  ms: number;
+  distanceM: number;
+}
+
+// 이동 판정 규칙(간격·수집 공백·반경)은 주·월과 연 통계가 반드시 같아야 해서 한 곳에 둔다
+export function moveSegments(stays: Stay[]): MoveSegment[] {
+  const segs: MoveSegment[] = [];
+  for (let i = 1; i < stays.length; i++) {
+    const prev = stays[i - 1];
+    const next = stays[i];
+    const gap = Date.parse(next.start_ts) - Date.parse(prev.end_ts);
+    if (gap <= 0 || gap > MOVE_MAX_GAP_MS) continue;
+    const dist = haversineM(prev.lat, prev.lng, next.lat, next.lng);
+    // 반경 안 재체류는 실제 이동이 아니다 — 거리 0인데 gap만 더해져 이동시간이 부풀던 것 방지
+    if (dist <= DEFAULT_STAY_PARAMS.radiusM) continue;
+    segs.push({ startTs: prev.end_ts, ms: gap, distanceM: dist });
+  }
+  return segs;
+}
+
 export function computeStats(stays: Stay[], fromTs: string, toTs: string): StatsResult {
   const acc = new Map<string, PlaceStat>();
   const weekdayByPlace: Record<string, number[]> = {};
@@ -74,16 +96,9 @@ export function computeStats(stays: Stay[], fromTs: string, toTs: string): Stats
   }
 
   const move: MoveStat = { totalMs: 0, distanceM: 0, count: 0 };
-  for (let i = 1; i < stays.length; i++) {
-    const prev = stays[i - 1];
-    const next = stays[i];
-    const gap = Date.parse(next.start_ts) - Date.parse(prev.end_ts);
-    if (gap <= 0 || gap > MOVE_MAX_GAP_MS) continue;
-    const dist = haversineM(prev.lat, prev.lng, next.lat, next.lng);
-    // 반경 안 재체류는 실제 이동이 아니다 — 거리 0인데 gap만 더해져 이동시간이 부풀던 것 방지
-    if (dist <= DEFAULT_STAY_PARAMS.radiusM) continue;
-    move.totalMs += gap;
-    move.distanceM += dist;
+  for (const seg of moveSegments(stays)) {
+    move.totalMs += seg.ms;
+    move.distanceM += seg.distanceM;
     move.count++;
   }
 

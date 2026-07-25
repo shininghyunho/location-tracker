@@ -12,9 +12,11 @@ import type { PeriodUnit } from './period';
 import { fmtDuration, todayStr } from '../../lib/date';
 import { computeStats, UNLABELED } from './computeStats';
 import { PlaceCalendar } from './PlaceCalendar';
+import { YearStats } from './YearStats';
 import { useSwipe } from '../../lib/useSwipe';
 
 const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
+const UNIT_LABELS: Record<PeriodUnit, string> = { week: '주', month: '월', year: '연' };
 
 // 랭킹 상위 4곳은 고정 색, 나머지는 회색 '기타'(설계 §2)
 const PLACE_COLORS = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-violet-500'];
@@ -127,7 +129,7 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
 
       <div className="flex items-center justify-between rounded-lg bg-white p-2 shadow-sm">
         <div className="flex gap-1">
-          {(['week', 'month'] as const).map((u) => (
+          {(['week', 'month', 'year'] as const).map((u) => (
             <button
               key={u}
               type="button"
@@ -136,7 +138,7 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
                 unit === u ? 'bg-blue-600 text-white' : 'text-slate-600'
               }`}
             >
-              {u === 'week' ? '주' : '월'}
+              {UNIT_LABELS[u]}
             </button>
           ))}
         </div>
@@ -168,6 +170,10 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
                 : ''
           }`}
         >
+          {unit === 'year' ? (
+            <YearStats stays={stays} fromTs={fromTs} toTs={toTs} />
+          ) : (
+            <>
           <section className="rounded-lg bg-white p-3 shadow-sm">
           <h3 className="pb-2 text-sm font-bold text-slate-900">장소 랭킹</h3>
           <ul className="flex flex-col gap-2">
@@ -249,6 +255,8 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
             <p className="text-slate-400">이 기간의 이동 기록이 없습니다</p>
           )}
         </section>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -172,6 +172,25 @@ export async function getVisitDaysByLabel(
   return [...days];
 }
 
+// 연간 '새로 방문한 장소' 판정용 — 라벨별 최초 방문 시각. 연 범위 안에 최초 방문이 든 라벨을 센다
+export async function getLabelFirstVisits(): Promise<Record<string, string>> {
+  if (!isNative) {
+    const acc: Record<string, string> = {};
+    for (const s of webStays) {
+      if (s.deleted || s.label === null) continue;
+      if (!(s.label in acc) || s.start_ts < acc[s.label]) acc[s.label] = s.start_ts;
+    }
+    return acc;
+  }
+  const db = await getDb();
+  const res = await db.query(
+    'SELECT label, MIN(start_ts) AS first FROM stays WHERE deleted = 0 AND label IS NOT NULL GROUP BY label',
+  );
+  return Object.fromEntries(
+    ((res.values ?? []) as { label: string; first: string }[]).map((r) => [r.label, r.first]),
+  );
+}
+
 export async function deleteStay(id: number): Promise<void> {
   if (!isNative) {
     const target = webStays.find((s) => s.id === id);
