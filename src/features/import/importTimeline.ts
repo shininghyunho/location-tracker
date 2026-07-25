@@ -21,7 +21,7 @@ export interface ImportResult {
 // 사이에 이동 세그먼트가 있으면 시간이 붙어 있지 않아 병합되지 않는다 (나갔다 온 건 별개 체류 유지)
 const MERGE_MAX_GAP_MS = 60_000;
 
-function mergeContiguousStays(stays: NewStay[]): NewStay[] {
+export function mergeContiguousStays(stays: NewStay[]): NewStay[] {
   const sorted = [...stays].sort((a, b) => (a.start_ts < b.start_ts ? -1 : 1));
   const merged: NewStay[] = [];
   for (const s of sorted) {
