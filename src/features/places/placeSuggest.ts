@@ -27,8 +27,8 @@ export function mergeSuggestions(batches: KakaoPlaceDoc[][], limit = 5): PlaceSu
   return all.sort((a, b) => a.distanceM - b.distanceM).slice(0, limit);
 }
 
-// 콘솔 쿼터(일 500) 대비 8% — 버그로 루프가 돌아도 쿼터 근처에 못 가게 하는 자체 상한
-export const DAILY_CALL_LIMIT = 40;
+// 콘솔 쿼터(일 500)와 동일 — 도달하면 429 전에 로컬에서 먼저 끊는다
+export const DAILY_CALL_LIMIT = 500;
 
 export interface QuotaState {
   date: string;
