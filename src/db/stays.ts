@@ -219,9 +219,9 @@ export async function deleteStay(id: number): Promise<void> {
 // F5 라벨 매칭 반경 — 체류판정과 같은 설정값을 공유한다
 const labelRadiusM = DEFAULT_STAY_PARAMS.radiusM;
 
-// 라벨된(삭제 안 된) stay만 — 라벨 근접 조회의 스캔 대상을 좁힌다.
+// 라벨된(삭제 안 된) stay만 — 라벨 근접 조회·발자국 지도의 스캔 대상을 좁힌다.
 // 새 stay 확정마다 findNearestLabel이 불려 전체(19개월치)를 훑던 것을 라벨된 것만으로 줄인다
-async function getLabeledStays(): Promise<Stay[]> {
+export async function getLabeledStays(): Promise<Stay[]> {
   if (!isNative) return webStays.filter((s) => !s.deleted && s.label !== null);
   const db = await getDb();
   const res = await db.query(

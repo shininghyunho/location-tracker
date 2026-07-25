@@ -9,8 +9,10 @@ import { PermissionSheet } from './features/collector/PermissionSheet';
 import { CollectorSheet } from './features/collector/CollectorSheet';
 import { useDayTimeline } from './features/stays/useDayTimeline';
 import { MapView } from './features/map/MapView';
+import type { MapMode } from './features/map/MapView';
 import { dropStaleEchoes } from './features/map/dropStaleEchoes';
 import { collapseStayWindows } from './features/map/collapseStayWindows';
+import { computeFootprints } from './features/map/computeFootprints';
 import { LabelSheet } from './features/stays/LabelSheet';
 import { StayList } from './features/stays/StayList';
 import { StatsPanel } from './features/stats/StatsPanel';
@@ -24,7 +26,7 @@ import { BackupSheet } from './features/backup/BackupSheet';
 import type { ImportProgress } from './features/import/importTimeline';
 import { appLog } from './lib/appLog';
 import { addDaysStr, fmtDateWithDay, todayStr } from './lib/date';
-import { deleteStay, findNearestLabel, getDatesWithData, getLabelCoords, insertStay } from './db/stays';
+import { deleteStay, findNearestLabel, getDatesWithData, getLabelCoords, getLabeledStays, insertStay } from './db/stays';
 import type { Stay } from './db/stays';
 import { countPoints } from './db/points';
 
@@ -115,6 +117,16 @@ function App() {
   const [labelTarget, setLabelTarget] = useState<Stay | null>(null);
   const [selected, setSelected] = useState<Stay | null>(null);
   const [ongoingSelected, setOngoingSelected] = useState(false);
+  const [mapMode, setMapMode] = useState<MapMode>('day');
+  // 발자국 원 탭으로 검색을 열 때 그 장소 상세로 바로 진입시키는 초기 검색어
+  const [searchLabel, setSearchLabel] = useState<string | null>(null);
+
+  // 발자국 데이터는 모드를 켰을 때만 조회 — 'timeline' 프리픽스로 라벨 수정 시 함께 갱신된다
+  const { data: footprints = [] } = useQuery({
+    queryKey: ['timeline', 'footprints'],
+    queryFn: async () => computeFootprints(await getLabeledStays()),
+    enabled: mapMode === 'all',
+  });
   // 날짜 변경 방향 — 새 날짜 콘텐츠가 이동 방향에서 밀려 들어오는 애니메이션에 쓴다 (초기 로드엔 없음)
   const [slideDir, setSlideDir] = useState<'next' | 'prev' | null>(null);
   const cardRefs = useRef(new Map<number, HTMLLIElement>());
@@ -154,6 +166,8 @@ function App() {
   const selectStay = (s: Stay | null) => {
     setOngoingSelected(false);
     setSelected(s);
+    // 발자국 모드에서 카드를 고르면 하루 모드로 복귀 — 포커스 이동이 하루 궤적 위에서만 의미 있다
+    if (s) setMapMode('day');
   };
 
   // 수집 시작(시트에서 호출): 이미 '항상 허용'이면 바로 시작, 아니면 사전 설명 모달(U9)부터
@@ -278,7 +292,10 @@ function App() {
           <button
             type="button"
             aria-label="장소 검색"
-            onClick={() => setOverlay('search')}
+            onClick={() => {
+              setSearchLabel(null);
+              setOverlay('search');
+            }}
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600"
           >
             <svg
@@ -402,7 +419,22 @@ function App() {
         </button>
       </div>
 
-      <MapView trackPoints={points} stays={stayMarkers} focus={focus} onStayTap={onStayTap} />
+      <MapView
+        trackPoints={points}
+        stays={stayMarkers}
+        focus={focus}
+        mode={mapMode}
+        footprints={footprints}
+        onModeChange={(m) => {
+          setMapMode(m);
+          if (m === 'all') selectStay(null);
+        }}
+        onStayTap={onStayTap}
+        onFootprintTap={(label) => {
+          setSearchLabel(label);
+          setOverlay('search');
+        }}
+      />
 
       {/* grow로 남는 세로 공간까지 채워 카드 아래 빈 영역도 스와이프 대상이 되게 한다 */}
       <div {...swipeDate} className="grow overflow-hidden">
@@ -421,6 +453,7 @@ function App() {
           onToggleOngoing={() => {
             setSelected(null);
             setOngoingSelected(!ongoingSelected);
+            if (!ongoingSelected) setMapMode('day');
           }}
           onEdit={setLabelTarget}
           onDelete={onDelete}
@@ -484,6 +517,7 @@ function App() {
       {overlay === 'stats' && <StatsPanel onClose={() => setOverlay(null)} />}
       {overlay === 'search' && (
         <SearchPanel
+          initialQuery={searchLabel ?? undefined}
           onClose={() => setOverlay(null)}
           onPickDate={(d) => {
             changeDate(d);

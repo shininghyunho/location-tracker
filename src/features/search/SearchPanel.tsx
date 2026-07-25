@@ -20,10 +20,12 @@ function fmtDaysAgo(days: number): string {
 interface SearchPanelProps {
   onClose: () => void;
   onPickDate: (date: string) => void;
+  // 발자국 지도의 원 탭 → 그 장소 상세로 바로 진입 (열 때마다 remount라 초기값으로 충분)
+  initialQuery?: string;
 }
 
-export function SearchPanel({ onClose, onPickDate }: SearchPanelProps) {
-  const [query, setQuery] = useState('');
+export function SearchPanel({ onClose, onPickDate, initialQuery }: SearchPanelProps) {
+  const [query, setQuery] = useState(initialQuery ?? '');
   const { data: labels = [] } = useQuery({ queryKey: ['search', 'labels'], queryFn: getAllLabels });
   const q = query.trim();
   // 별도 선택 state 없이 입력값이 라벨과 정확히 일치하면 선택으로 본다 — 목록 탭이 입력을 채우는 방식
