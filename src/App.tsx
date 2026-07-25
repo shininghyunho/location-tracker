@@ -14,6 +14,7 @@ import { collapseStayWindows } from './features/map/collapseStayWindows';
 import { LabelSheet } from './features/stays/LabelSheet';
 import { StayList } from './features/stays/StayList';
 import { StatsPanel } from './features/stats/StatsPanel';
+import { SearchPanel } from './features/search/SearchPanel';
 import { CalendarSheet } from './features/calendar/CalendarSheet';
 import { useSwipe } from './lib/useSwipe';
 import { importTimeline } from './features/import/importTimeline';
@@ -107,6 +108,7 @@ function App() {
     | 'collector'
     | 'about'
     | 'stats'
+    | 'search'
     | 'menu'
     | null
   >(null);
@@ -272,6 +274,24 @@ function App() {
             }`}
           >
             {isCollecting ? '● 수집 중' : '○ 수집 꺼짐'}
+          </button>
+          <button
+            type="button"
+            aria-label="장소 검색"
+            onClick={() => setOverlay('search')}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600"
+          >
+            <svg
+              viewBox="0 0 16 16"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              aria-hidden="true"
+            >
+              <circle cx="7" cy="7" r="4.5" />
+              <line x1="10.5" y1="10.5" x2="14" y2="14" strokeLinecap="round" />
+            </svg>
           </button>
           <button
             type="button"
@@ -462,6 +482,15 @@ function App() {
       {overlay === 'backup' && <BackupSheet onClose={() => setOverlay(null)} />}
       {overlay === 'about' && <AboutSheet onClose={() => setOverlay(null)} />}
       {overlay === 'stats' && <StatsPanel onClose={() => setOverlay(null)} />}
+      {overlay === 'search' && (
+        <SearchPanel
+          onClose={() => setOverlay(null)}
+          onPickDate={(d) => {
+            changeDate(d);
+            setOverlay(null);
+          }}
+        />
+      )}
       {labelTarget && <LabelSheet stay={labelTarget} onClose={() => setLabelTarget(null)} />}
     </div>
   );

@@ -172,6 +172,21 @@ export async function getVisitDaysByLabel(
   return [...days];
 }
 
+// 장소 검색용 — 이 라벨의 방문 이력 전체(최근순)
+export async function getStaysByLabel(label: string): Promise<Stay[]> {
+  if (!isNative) {
+    return webStays
+      .filter((s) => !s.deleted && s.label === label)
+      .sort((a, b) => (a.start_ts > b.start_ts ? -1 : 1));
+  }
+  const db = await getDb();
+  const res = await db.query(
+    'SELECT * FROM stays WHERE deleted = 0 AND label = ? ORDER BY start_ts DESC',
+    [label],
+  );
+  return (res.values ?? []) as Stay[];
+}
+
 // 연간 '새로 방문한 장소' 판정용 — 라벨별 최초 방문 시각. 연 범위 안에 최초 방문이 든 라벨을 센다
 export async function getLabelFirstVisits(): Promise<Record<string, string>> {
   if (!isNative) {
