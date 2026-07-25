@@ -6,6 +6,7 @@ import {
   DesiredAccuracy,
   LogLevel,
   AuthorizationStatus,
+  NotificationPriority,
 } from '@transistorsoft/background-geolocation-types';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { insertPoint } from '../../db/points';
@@ -72,7 +73,8 @@ export function useCollector(onPointSaved: () => void) {
         void appLog('error', 'onLocation', `위치 오류 코드 ${err}`);
       },
     );
-    // 정지 상태에선 플러그인이 GPS를 쉬므로, 앱이 살아있는 동안엔 heartbeat로 1분 간격을 유지
+    // disableStopDetection으로 정지 중에도 픽스가 이어지지만, tracking 상태가 깨진 예외 상황의
+    // 백스톱으로 heartbeat 경로를 남긴다(앱이 살아있는 동안 1분 간격 보강).
     const heartbeatSub = BackgroundGeolocation.onHeartbeat(() => {
       BackgroundGeolocation.getCurrentPosition({ samples: 1, persist: true, timeout: 30 }).catch(
         (e) => void appLog('warn', 'heartbeat', `위치 요청 실패: ${errMsg(e)}`),
@@ -94,6 +96,8 @@ export function useCollector(onPointSaved: () => void) {
         locationUpdateInterval: SAVE_INTERVAL_MS,
         disableElasticity: true,
         locationAuthorizationRequest: 'Always',
+        // 정지 감지를 끄면 포그라운드 서비스가 내려가지 않아 프로세스가 캐시로 밀려 죽는 것을 막는다
+        disableStopDetection: true,
       },
       app: {
         heartbeatInterval: SAVE_INTERVAL_MS / 1000,
@@ -102,7 +106,12 @@ export function useCollector(onPointSaved: () => void) {
         // 앱 프로세스가 죽으면 이 JS가 없어 heartbeat가 통째로 버려진다(skip heartbeat).
         // 정지 중 위치는 heartbeat로만 남으므로, 네이티브 HeadlessTask가 대신 받게 한다
         enableHeadless: true,
-        notification: { title: '위치 수집 중', text: '이동 기록을 저장하고 있습니다.' },
+        // Min: 무음·상태바 아이콘 숨김·알림함 최하단 접힘 (FGS 특성상 완전 제거는 불가)
+        notification: {
+          title: '위치 수집 중',
+          text: '이동 기록을 저장하고 있습니다.',
+          priority: NotificationPriority.Min,
+        },
       },
       // 플러그인 네이티브 로그(서비스 생존·권한·위치 요청 내부)를 SQLite에 남긴다 — 로그 화면에서 공유 가능
       logger: { logLevel: LogLevel.Verbose, logMaxDays: 3 },
