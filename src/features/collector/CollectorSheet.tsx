@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AuthorizationStatus } from '@transistorsoft/background-geolocation-types';
+import { BottomSheet } from '../../components/BottomSheet';
 
 interface CollectorSheetProps {
   isCollecting: boolean;
@@ -38,69 +39,67 @@ export function CollectorSheet({
 }: CollectorSheetProps) {
   const [confirmStop, setConfirmStop] = useState(false);
   return (
-    <div className="fixed inset-0 z-[1100] flex flex-col justify-end bg-black/40" onClick={onClose}>
-      <div className="rounded-t-2xl bg-white p-5 pb-8" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-slate-900">수집 상태</h2>
-        <dl className="mt-3 space-y-1.5 text-sm">
-          <div className="flex justify-between">
-            <dt className="text-slate-500">상태</dt>
-            <dd
-              className={
-                isCollecting ? 'font-semibold text-emerald-600' : 'font-semibold text-slate-500'
-              }
-            >
-              {isCollecting ? '켜짐 · 1분 간격' : '꺼짐'}
-            </dd>
-          </div>
-          <div className="flex justify-between">
-            <dt className="text-slate-500">위치 권한</dt>
-            <dd className="text-slate-700">{permLabel(permStatus)}</dd>
-          </div>
-          <div className="flex justify-between">
-            <dt className="text-slate-500">누적 위치</dt>
-            <dd className="text-slate-700">{totalPoints.toLocaleString()} points</dd>
-          </div>
-        </dl>
-        <div className="mt-5">
-          {!isCollecting ? (
-            <button
-              type="button"
-              onClick={onStart}
-              className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white"
-            >
-              수집 시작
-            </button>
-          ) : confirmStop ? (
-            <div>
-              <p className="text-sm text-red-600">중지하면 다시 켤 때까지 이동이 기록되지 않아요.</p>
-              <div className="mt-2 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setConfirmStop(false)}
-                  className="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-600"
-                >
-                  계속 수집
-                </button>
-                <button
-                  type="button"
-                  onClick={onStop}
-                  className="flex-1 rounded-lg bg-red-500 py-2.5 text-sm font-semibold text-white"
-                >
-                  정말 중지
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirmStop(true)}
-              className="w-full rounded-lg border border-red-200 py-2.5 text-sm font-semibold text-red-600"
-            >
-              수집 중지
-            </button>
-          )}
+    <BottomSheet onClose={onClose}>
+      <h2 className="text-lg font-bold text-slate-900">수집 상태</h2>
+      <dl className="mt-3 space-y-1.5 text-sm">
+        <div className="flex justify-between">
+          <dt className="text-slate-500">상태</dt>
+          <dd
+            className={
+              isCollecting ? 'font-semibold text-emerald-600' : 'font-semibold text-slate-500'
+            }
+          >
+            {isCollecting ? '켜짐 · 1분 간격' : '꺼짐'}
+          </dd>
         </div>
+        <div className="flex justify-between">
+          <dt className="text-slate-500">위치 권한</dt>
+          <dd className="text-slate-700">{permLabel(permStatus)}</dd>
+        </div>
+        <div className="flex justify-between">
+          <dt className="text-slate-500">누적 위치</dt>
+          <dd className="text-slate-700">{totalPoints.toLocaleString()} points</dd>
+        </div>
+      </dl>
+      <div className="mt-5">
+        {!isCollecting ? (
+          <button
+            type="button"
+            onClick={onStart}
+            className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white"
+          >
+            수집 시작
+          </button>
+        ) : confirmStop ? (
+          <div>
+            <p className="text-sm text-red-600">중지하면 다시 켤 때까지 이동이 기록되지 않아요.</p>
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmStop(false)}
+                className="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-600"
+              >
+                계속 수집
+              </button>
+              <button
+                type="button"
+                onClick={onStop}
+                className="flex-1 rounded-lg bg-red-500 py-2.5 text-sm font-semibold text-white"
+              >
+                정말 중지
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmStop(true)}
+            className="w-full rounded-lg border border-red-200 py-2.5 text-sm font-semibold text-red-600"
+          >
+            수집 중지
+          </button>
+        )}
       </div>
-    </div>
+    </BottomSheet>
   );
 }

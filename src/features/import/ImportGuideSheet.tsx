@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { BottomSheet } from '../../components/BottomSheet';
 import { useSwipe } from '../../lib/useSwipe';
 
 interface ImportGuideSheetProps {
@@ -51,64 +52,62 @@ export function ImportGuideSheet({ onPickFile, onClose }: ImportGuideSheetProps)
   );
 
   return (
-    <div className="fixed inset-0 z-[1100] flex flex-col justify-end bg-black/40" onClick={onClose}>
-      <div className="rounded-t-2xl bg-white p-5 pb-8" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-lg font-bold text-slate-900">구글 타임라인 가져오기</h2>
-          <span className="text-sm text-slate-400">
-            {step + 1}/{STEPS.length}
-          </span>
-        </div>
-        <div {...swipeStep} className="mt-3 overflow-x-hidden">
-          {/* key={step}로 remount → 스텝이 바뀔 때마다 이동 방향의 slide-in이 한 번 재생된다 */}
-          <div
-            key={step}
-            className={
-              slideDir === 'next'
-                ? 'animate-slide-in-right'
-                : slideDir === 'prev'
-                  ? 'animate-slide-in-left'
-                  : ''
-            }
-          >
-            <img
-              src={STEPS[step].img}
-              alt={`가져오기 ${step + 1}단계`}
-              className="mx-auto h-[40vh] rounded-lg border border-slate-200 object-contain"
-            />
-            <p className="mt-3 min-h-10 text-center text-sm leading-relaxed text-slate-600">
-              {STEPS[step].caption}
-            </p>
-          </div>
-        </div>
-        <div className="mt-4 flex gap-2">
-          <button
-            type="button"
-            onClick={() => moveStep(-1)}
-            disabled={step === 0}
-            className="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-600 disabled:text-slate-300"
-          >
-            이전
-          </button>
-          {isLast ? (
-            <button
-              type="button"
-              onClick={onPickFile}
-              className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white"
-            >
-              파일 선택
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => moveStep(1)}
-              className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white"
-            >
-              다음
-            </button>
-          )}
+    <BottomSheet onClose={onClose}>
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-lg font-bold text-slate-900">구글 타임라인 가져오기</h2>
+        <span className="text-sm text-slate-400">
+          {step + 1}/{STEPS.length}
+        </span>
+      </div>
+      <div {...swipeStep} className="mt-3 overflow-x-hidden">
+        {/* key={step}로 remount → 스텝이 바뀔 때마다 이동 방향의 slide-in이 한 번 재생된다 */}
+        <div
+          key={step}
+          className={
+            slideDir === 'next'
+              ? 'animate-slide-in-right'
+              : slideDir === 'prev'
+                ? 'animate-slide-in-left'
+                : ''
+          }
+        >
+          <img
+            src={STEPS[step].img}
+            alt={`가져오기 ${step + 1}단계`}
+            className="mx-auto h-[40vh] rounded-lg border border-slate-200 object-contain"
+          />
+          <p className="mt-3 min-h-10 text-center text-sm leading-relaxed text-slate-600">
+            {STEPS[step].caption}
+          </p>
         </div>
       </div>
-    </div>
+      <div className="mt-4 flex gap-2">
+        <button
+          type="button"
+          onClick={() => moveStep(-1)}
+          disabled={step === 0}
+          className="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-600 disabled:text-slate-300"
+        >
+          이전
+        </button>
+        {isLast ? (
+          <button
+            type="button"
+            onClick={onPickFile}
+            className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white"
+          >
+            파일 선택
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => moveStep(1)}
+            className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white"
+          >
+            다음
+          </button>
+        )}
+      </div>
+    </BottomSheet>
   );
 }
