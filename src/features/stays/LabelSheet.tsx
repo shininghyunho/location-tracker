@@ -11,6 +11,14 @@ import {
 } from '../../db/stays';
 import { appLog } from '../../lib/appLog';
 import { BottomSheet } from '../../components/BottomSheet';
+import { fetchNearbyPlaces, hasKakaoKey } from '../places/kakaoPlaces';
+import type { SuggestResult } from '../places/kakaoPlaces';
+
+const SUGGEST_ERROR_MSG = {
+  quota: '오늘 추천 한도를 다 썼어요. 내일 다시 시도해 주세요.',
+  auth: '추천 기능 설정에 문제가 있어요.',
+  network: '네트워크 오류로 추천을 가져오지 못했어요.',
+} as const;
 
 export function LabelSheet({ stay, onClose }: { stay: Stay; onClose: () => void }) {
   const queryClient = useQueryClient();
@@ -18,6 +26,15 @@ export function LabelSheet({ stay, onClose }: { stay: Stay; onClose: () => void 
   const [saving, setSaving] = useState(false);
   // 다른 곳에서 쓰는 이름으로 저장하려 할 때 합칠 대상 수 — null이면 확인 단계 아님
   const [mergeCount, setMergeCount] = useState<number | null>(null);
+  // 좌표가 외부(카카오)로 나가는 기능이라 자동 조회 없이 버튼을 눌렀을 때만 채운다
+  const [suggest, setSuggest] = useState<SuggestResult | null>(null);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+
+  const onSuggest = async () => {
+    setSuggestLoading(true);
+    setSuggest(await fetchNearbyPlaces(stay.lat, stay.lng));
+    setSuggestLoading(false);
+  };
 
   const { data: nearbyLabels = [] } = useQuery({
     queryKey: ['nearbyLabels', stay.id],
@@ -117,6 +134,37 @@ export function LabelSheet({ stay, onClose }: { stay: Stay; onClose: () => void 
               ))}
             </div>
           )}
+          {hasKakaoKey && suggest === null && (
+            <button
+              type="button"
+              onClick={onSuggest}
+              disabled={suggestLoading}
+              className="mt-3 w-full rounded-lg border border-slate-300 py-2 text-xs font-semibold text-slate-600 disabled:text-slate-300"
+            >
+              {suggestLoading ? '주변 장소 찾는 중…' : '주변 장소 추천'}
+            </button>
+          )}
+          {suggest !== null &&
+            (suggest.ok ? (
+              suggest.places.length > 0 ? (
+                <div className="flex flex-wrap gap-2 pt-3">
+                  {suggest.places.map((p) => (
+                    <button
+                      key={p.name}
+                      type="button"
+                      onClick={() => setValue(p.name)}
+                      className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600"
+                    >
+                      {p.name} · {p.distanceM}m
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="pt-3 text-xs text-slate-400">주변에서 찾은 장소가 없어요</p>
+              )
+            ) : (
+              <p className="pt-3 text-xs text-slate-400">{SUGGEST_ERROR_MSG[suggest.reason]}</p>
+            ))}
           <div className="flex gap-2 pt-4">
             <button
               type="button"
