@@ -76,6 +76,22 @@ export async function updateStayEnd(id: number, endTs: string): Promise<void> {
   await db.run('UPDATE stays SET end_ts = ? WHERE id = ?', [endTs, id]);
 }
 
+// 백업 전용 — deleted 포함 전량. 복원 시 커서 위치를 원본과 일치시키려면 지운 행도 있어야 한다
+export async function getAllStaysForBackup(): Promise<Stay[]> {
+  if (!isNative) return [...webStays].sort((a, b) => (a.start_ts < b.start_ts ? -1 : 1));
+  const db = await getDb();
+  const res = await db.query('SELECT * FROM stays ORDER BY start_ts');
+  return (res.values ?? []) as Stay[];
+}
+
+// 백업 시트 표시용 — 사용자가 보는 체류 수와 같도록 deleted 제외
+export async function countStays(): Promise<number> {
+  if (!isNative) return webStays.filter((s) => !s.deleted).length;
+  const db = await getDb();
+  const res = await db.query('SELECT COUNT(*) AS cnt FROM stays WHERE deleted = 0');
+  return (res.values?.[0]?.cnt ?? 0) as number;
+}
+
 export async function getAllStays(): Promise<Stay[]> {
   if (!isNative) {
     return webStays.filter((s) => !s.deleted).sort((a, b) => (a.start_ts < b.start_ts ? -1 : 1));
@@ -261,19 +277,20 @@ export async function relabelByName(oldLabel: string, newLabel: string): Promise
   await db.run('UPDATE stays SET label = ? WHERE deleted = 0 AND label = ?', [newLabel, oldLabel]);
 }
 
-// F6 배치 삽입 — batchInsertPoints와 같은 구조. 행당 바인드 6개 × 150 = 900 ≤ 999.
-// 웹 중복 검사가 deleted 포함 전체를 보는 것이 의도 — 지운 stay가 재-import로 부활하면 안 된다
-const CHUNK = 150;
+// F6 배치 삽입 — batchInsertPoints와 같은 구조. 행당 바인드 7개 × 140 = 980 ≤ 999.
+// 웹 중복 검사가 deleted 포함 전체를 보는 것이 의도 — 지운 stay가 재-import로 부활하면 안 된다.
+// deleted는 백업 복원용 — 빠지면 커서가 뒤로 밀려 지운 체류가 재판정으로 부활한다
+const CHUNK = 140;
 
 export async function batchInsertStays(
-  stays: NewStay[],
+  stays: (NewStay & { deleted?: number })[],
   onChunk?: (n: number) => void,
 ): Promise<number> {
   let inserted = 0;
   if (!isNative) {
     for (const s of stays) {
       if (!webStays.some((w) => w.start_ts === s.start_ts && w.source === s.source)) {
-        webStays.push({ ...s, id: webStays.length + 1, deleted: 0 });
+        webStays.push({ ...s, id: webStays.length + 1, deleted: s.deleted ?? 0 });
         inserted++;
       }
     }
@@ -283,10 +300,18 @@ export async function batchInsertStays(
   const db = await getDb();
   for (let i = 0; i < stays.length; i += CHUNK) {
     const chunk = stays.slice(i, i + CHUNK);
-    const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, ?)').join(', ');
-    const values = chunk.flatMap((s) => [s.start_ts, s.end_ts, s.lat, s.lng, s.label, s.source]);
+    const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
+    const values = chunk.flatMap((s) => [
+      s.start_ts,
+      s.end_ts,
+      s.lat,
+      s.lng,
+      s.label,
+      s.source,
+      s.deleted ?? 0,
+    ]);
     const res = await db.run(
-      `INSERT OR IGNORE INTO stays (start_ts, end_ts, lat, lng, label, source) VALUES ${placeholders}`,
+      `INSERT OR IGNORE INTO stays (start_ts, end_ts, lat, lng, label, source, deleted) VALUES ${placeholders}`,
       values,
     );
     inserted += res.changes?.changes ?? 0;

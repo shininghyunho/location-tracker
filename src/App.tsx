@@ -19,6 +19,7 @@ import { useSwipe } from './lib/useSwipe';
 import { importTimeline } from './features/import/importTimeline';
 import { ImportGuideSheet } from './features/import/ImportGuideSheet';
 import { AboutSheet } from './features/about/AboutSheet';
+import { BackupSheet } from './features/backup/BackupSheet';
 import type { ImportProgress } from './features/import/importTimeline';
 import { appLog } from './lib/appLog';
 import { addDaysStr, fmtDateWithDay, todayStr } from './lib/date';
@@ -99,7 +100,15 @@ function App() {
   // 오버레이는 설계상 한 번에 하나만 — union 하나로 동시 열림을 타입 수준에서 차단.
   // labelTarget은 열림 여부가 아니라 대상 Stay를 담으므로 별도 유지
   const [overlay, setOverlay] = useState<
-    'calendar' | 'importGuide' | 'permRationale' | 'collector' | 'about' | 'stats' | 'menu' | null
+    | 'calendar'
+    | 'importGuide'
+    | 'backup'
+    | 'permRationale'
+    | 'collector'
+    | 'about'
+    | 'stats'
+    | 'menu'
+    | null
   >(null);
   const [labelTarget, setLabelTarget] = useState<Stay | null>(null);
   const [selected, setSelected] = useState<Stay | null>(null);
@@ -300,6 +309,13 @@ function App() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => setOverlay('backup')}
+                    className="block w-full px-4 py-2 text-left text-sm text-slate-700"
+                  >
+                    내보내기
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setOverlay('about')}
                     className="block w-full px-4 py-2 text-left text-sm text-slate-700"
                   >
@@ -443,6 +459,7 @@ function App() {
           onClose={() => setOverlay(null)}
         />
       )}
+      {overlay === 'backup' && <BackupSheet onClose={() => setOverlay(null)} />}
       {overlay === 'about' && <AboutSheet onClose={() => setOverlay(null)} />}
       {overlay === 'stats' && <StatsPanel onClose={() => setOverlay(null)} />}
       {labelTarget && <LabelSheet stay={labelTarget} onClose={() => setLabelTarget(null)} />}
