@@ -174,87 +174,91 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
             <YearStats stays={stays} fromTs={fromTs} toTs={toTs} />
           ) : (
             <>
-          <section className="rounded-lg bg-white p-3 shadow-sm">
-          <h3 className="pb-2 text-sm font-bold text-slate-900">장소 랭킹</h3>
-          <ul className="flex flex-col gap-2">
-            {stats.places.map((p) => (
-              <li key={p.key} onClick={() => setExpanded(expanded === p.key ? null : p.key)}>
-                <div className="flex items-baseline justify-between text-sm">
-                  <span className={`font-semibold ${p.key === UNLABELED ? 'text-slate-400' : 'text-slate-900'}`}>
-                    {p.key}
-                  </span>
-                  <span className="text-slate-500">
-                    {fmtDuration(p.durationMs)} · {p.visitCount}회
-                  </span>
-                </div>
-                <div className="mt-1 h-2 rounded bg-slate-100">
-                  <div
-                    className={`h-2 rounded ${colorOf(p.key)}`}
-                    style={{ width: `${(p.durationMs / topDuration) * 100}%` }}
-                  />
-                </div>
-                {expanded === p.key && (
-                  <>
-                    <Heatmap grid={stats.heatmap[p.key]} />
-                    {p.key !== UNLABELED && <PlaceCalendar label={p.key} />}
-                  </>
-                )}
-              </li>
-            ))}
-            {stats.places.length === 0 && (
-              <li className="p-4 text-center text-sm text-slate-400">이 기간의 체류 기록이 없습니다</li>
-            )}
-          </ul>
-        </section>
+              <section className="rounded-lg bg-white p-3 shadow-sm">
+                <h3 className="pb-2 text-sm font-bold text-slate-900">장소 랭킹</h3>
+                <ul className="flex flex-col gap-2">
+                  {stats.places.map((p) => (
+                    <li key={p.key} onClick={() => setExpanded(expanded === p.key ? null : p.key)}>
+                      <div className="flex items-baseline justify-between text-sm">
+                        <span
+                          className={`font-semibold ${p.key === UNLABELED ? 'text-slate-400' : 'text-slate-900'}`}
+                        >
+                          {p.key}
+                        </span>
+                        <span className="text-slate-500">
+                          {fmtDuration(p.durationMs)} · {p.visitCount}회
+                        </span>
+                      </div>
+                      <div className="mt-1 h-2 rounded bg-slate-100">
+                        <div
+                          className={`h-2 rounded ${colorOf(p.key)}`}
+                          style={{ width: `${(p.durationMs / topDuration) * 100}%` }}
+                        />
+                      </div>
+                      {expanded === p.key && (
+                        <>
+                          <Heatmap grid={stats.heatmap[p.key]} />
+                          {p.key !== UNLABELED && <PlaceCalendar label={p.key} />}
+                        </>
+                      )}
+                    </li>
+                  ))}
+                  {stats.places.length === 0 && (
+                    <li className="p-4 text-center text-sm text-slate-400">
+                      이 기간의 체류 기록이 없습니다
+                    </li>
+                  )}
+                </ul>
+              </section>
 
-        <section className="rounded-lg bg-white p-3 shadow-sm">
-          <h3 className="pb-2 text-sm font-bold text-slate-900">요일별 체류</h3>
-          <div className="flex h-28 items-end gap-2">
-            {weekdayBars.map((bar, w) => (
-              <div key={WEEKDAYS[w]} className="flex flex-1 flex-col items-center gap-1 self-end">
-                <div
-                  className="flex w-full flex-col-reverse overflow-hidden rounded-sm"
-                  style={{ height: `${(bar.total / maxWeekday) * 96}px` }}
-                >
-                  {bar.segs.map((seg) => (
-                    <div
-                      key={seg.key}
-                      className={colorOf(seg.key)}
-                      style={{ height: `${(seg.ms / bar.total) * 100}%` }}
-                    />
+              <section className="rounded-lg bg-white p-3 shadow-sm">
+                <h3 className="pb-2 text-sm font-bold text-slate-900">요일별 체류</h3>
+                <div className="flex h-28 items-end gap-2">
+                  {weekdayBars.map((bar, w) => (
+                    <div key={WEEKDAYS[w]} className="flex flex-1 flex-col items-center gap-1 self-end">
+                      <div
+                        className="flex w-full flex-col-reverse overflow-hidden rounded-sm"
+                        style={{ height: `${(bar.total / maxWeekday) * 96}px` }}
+                      >
+                        {bar.segs.map((seg) => (
+                          <div
+                            key={seg.key}
+                            className={colorOf(seg.key)}
+                            style={{ height: `${(seg.ms / bar.total) * 100}%` }}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-[10px] text-slate-400">{WEEKDAYS[w]}</span>
+                    </div>
                   ))}
                 </div>
-                <span className="text-[10px] text-slate-400">{WEEKDAYS[w]}</span>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-2 pt-2 text-[10px] text-slate-500">
-            {labeled.slice(0, PLACE_COLORS.length).map((p) => (
-              <span key={p.key} className="flex items-center gap-1">
-                <span className={`h-2 w-2 rounded-sm ${colorOf(p.key)}`} />
-                {p.key}
-              </span>
-            ))}
-            {stats.places.length > Math.min(labeled.length, PLACE_COLORS.length) && (
-              <span className="flex items-center gap-1">
-                <span className={`h-2 w-2 rounded-sm ${ETC_COLOR}`} />
-                기타
-              </span>
-            )}
-          </div>
-        </section>
+                <div className="flex flex-wrap gap-2 pt-2 text-[10px] text-slate-500">
+                  {labeled.slice(0, PLACE_COLORS.length).map((p) => (
+                    <span key={p.key} className="flex items-center gap-1">
+                      <span className={`h-2 w-2 rounded-sm ${colorOf(p.key)}`} />
+                      {p.key}
+                    </span>
+                  ))}
+                  {stats.places.length > Math.min(labeled.length, PLACE_COLORS.length) && (
+                    <span className="flex items-center gap-1">
+                      <span className={`h-2 w-2 rounded-sm ${ETC_COLOR}`} />
+                      기타
+                    </span>
+                  )}
+                </div>
+              </section>
 
-        <section className="rounded-lg bg-white p-3 text-sm text-slate-700 shadow-sm">
-          <h3 className="pb-1 text-sm font-bold text-slate-900">이동</h3>
-          {stats.move.count > 0 ? (
-            <p>
-              {stats.move.count}회 · {fmtDuration(stats.move.totalMs)} ·{' '}
-              {(stats.move.distanceM / 1000).toFixed(1)}km(직선)
-            </p>
-          ) : (
-            <p className="text-slate-400">이 기간의 이동 기록이 없습니다</p>
-          )}
-        </section>
+              <section className="rounded-lg bg-white p-3 text-sm text-slate-700 shadow-sm">
+                <h3 className="pb-1 text-sm font-bold text-slate-900">이동</h3>
+                {stats.move.count > 0 ? (
+                  <p>
+                    {stats.move.count}회 · {fmtDuration(stats.move.totalMs)} ·{' '}
+                    {(stats.move.distanceM / 1000).toFixed(1)}km(직선)
+                  </p>
+                ) : (
+                  <p className="text-slate-400">이 기간의 이동 기록이 없습니다</p>
+                )}
+              </section>
             </>
           )}
         </div>

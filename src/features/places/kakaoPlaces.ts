@@ -64,7 +64,7 @@ export async function fetchNearbyPlaces(lat: number, lng: number): Promise<Sugge
     }
     if (status === 200 && Array.isArray(data?.documents)) batches.push(data.documents);
   }
-  // 8콜 전부 네트워크 실패면 결과가 아니라 오류로 알린다
+  // 4콜 전부 네트워크 실패면 결과가 아니라 오류로 알린다
   if (batches.length === 0) return { ok: false, reason: 'network' };
   return { ok: true, places: mergeSuggestions(batches) };
 }
