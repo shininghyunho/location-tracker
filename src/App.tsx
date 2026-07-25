@@ -12,6 +12,7 @@ import { MapView } from './features/map/MapView';
 import { dropStaleEchoes } from './features/map/dropStaleEchoes';
 import { collapseStayWindows } from './features/map/collapseStayWindows';
 import { LabelSheet } from './features/stays/LabelSheet';
+import { StayList } from './features/stays/StayList';
 import { StatsPanel } from './features/stats/StatsPanel';
 import { CalendarSheet } from './features/calendar/CalendarSheet';
 import { useSwipe } from './lib/useSwipe';
@@ -20,14 +21,10 @@ import { ImportGuideSheet } from './features/import/ImportGuideSheet';
 import { AboutSheet } from './features/about/AboutSheet';
 import type { ImportProgress } from './features/import/importTimeline';
 import { appLog } from './lib/appLog';
-import { addDaysStr, fmtDateWithDay, fmtDuration, todayStr } from './lib/date';
+import { addDaysStr, fmtDateWithDay, todayStr } from './lib/date';
 import { deleteStay, findNearestLabel, getDatesWithData, getLabelCoords, insertStay } from './db/stays';
 import type { Stay } from './db/stays';
 import { countPoints } from './db/points';
-
-function fmtTime(ts: string): string {
-  return ts.slice(11, 16);
-}
 
 // 지도 궤적 전용 필터 — 실내 저품질 픽스(수십~수백 m 튐)가 선을 삐죽하게 만든다.
 // 체류 판정·통계는 원본 그대로 쓰고 표시만 거른다. null = 정보 없음(import 유래)이라 유지
@@ -374,123 +371,25 @@ function App() {
       {/* grow로 남는 세로 공간까지 채워 카드 아래 빈 영역도 스와이프 대상이 되게 한다 */}
       <div {...swipeDate} className="grow overflow-hidden">
         {/* key={date}로 remount → 날짜가 바뀔 때마다 이동 방향의 slide-in이 한 번 재생된다 */}
-        <ul
+        <StayList
           key={date}
-          className={`flex flex-col gap-2 ${
-            slideDir === 'next'
-              ? 'animate-slide-in-right'
-              : slideDir === 'prev'
-                ? 'animate-slide-in-left'
-                : ''
-          }`}
-        >
-          {stays.map((s) => {
-          // 이어붙여 저장 체류로 흡수된 진행 중 체류면 '진행 중'으로 표시
-          const isLive = s.id === liveStayId;
-          return (
-          <li
-            key={s.id}
-            ref={(el) => {
-              if (el) cardRefs.current.set(s.id, el);
-              else cardRefs.current.delete(s.id);
-            }}
-            onClick={() => selectStay(selected?.id === s.id ? null : s)}
-            className={`rounded-lg bg-white p-3 shadow-sm active:bg-slate-100 ${
-              isLive ? 'border-2 border-blue-200' : ''
-            } ${selected?.id === s.id ? 'ring-2 ring-inset ring-blue-500' : ''}`}
-          >
-            <div className="flex items-baseline justify-between">
-              <span className={`font-semibold ${isLive ? 'text-blue-700' : 'text-slate-900'}`}>
-                {isLive ? (s.label ? `${s.label}(현재 위치)` : '지금 여기') : (s.label ?? '이름 없는 장소')}
-              </span>
-              <span className="text-sm text-slate-500">
-                {fmtDuration(Date.parse(s.end_ts) - Date.parse(s.start_ts))}
-                {isLive ? '째' : ''}
-              </span>
-            </div>
-            <div className="text-sm text-slate-500">
-              {fmtTime(s.start_ts)} ~ {isLive ? '진행 중' : fmtTime(s.end_ts)}
-            </div>
-            {/* 좌표는 매일 보는 정보가 아니라서 펼쳤을 때만 (U19) */}
-            {selected?.id === s.id && (
-              <>
-                <div className="pt-1 text-xs text-slate-400">
-                  {s.lat.toFixed(5)}, {s.lng.toFixed(5)}
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setLabelTarget(s);
-                    }}
-                    className="flex-1 rounded-md bg-blue-50 py-2 text-sm font-semibold text-blue-700"
-                  >
-                    수정
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(s);
-                    }}
-                    className="flex-1 rounded-md bg-red-50 py-2 text-sm font-semibold text-red-600"
-                  >
-                    삭제
-                  </button>
-                </div>
-              </>
-            )}
-          </li>
-          );
-        })}
-
-        {ongoing && (
-          <li
-            onClick={() => {
-              setSelected(null);
-              setOngoingSelected(!ongoingSelected);
-            }}
-            className={`rounded-lg border-2 border-blue-200 bg-white p-3 shadow-sm active:bg-slate-100 ${
-              ongoingSelected ? 'ring-2 ring-inset ring-blue-500' : ''
-            }`}
-          >
-            <div className="flex items-baseline justify-between">
-              <span className="font-semibold text-blue-700">
-                {ongoingLabel ? `${ongoingLabel}(현재 위치)` : '지금 여기'}
-              </span>
-              <span className="text-sm text-slate-500">
-                {fmtDuration(Date.parse(ongoing.endTs) - Date.parse(ongoing.startTs))}째
-              </span>
-            </div>
-            <div className="text-sm text-slate-500">{fmtTime(ongoing.startTs)} ~ 진행 중</div>
-            {/* 삭제는 없다 — 저장 전이라 지울 row가 없고, 그 자리에 있는 한 재계산으로 곧 다시 뜬다 */}
-            {ongoingSelected && (
-              <>
-                <div className="pt-1 text-xs text-slate-400">
-                  {ongoing.lat.toFixed(5)}, {ongoing.lng.toFixed(5)}
-                </div>
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onLabelOngoing();
-                    }}
-                    className="w-full rounded-md bg-blue-50 py-2 text-sm font-semibold text-blue-700"
-                  >
-                    수정
-                  </button>
-                </div>
-              </>
-            )}
-          </li>
-        )}
-
-          {stays.length === 0 && !ongoing && (
-            <li className="p-6 text-center text-sm text-slate-400">이 날짜의 체류 기록이 없습니다</li>
-          )}
-        </ul>
+          stays={stays}
+          liveStayId={liveStayId}
+          ongoing={ongoing}
+          ongoingLabel={ongoingLabel}
+          selected={selected}
+          ongoingSelected={ongoingSelected}
+          slideDir={slideDir}
+          cardRefs={cardRefs}
+          onSelect={selectStay}
+          onToggleOngoing={() => {
+            setSelected(null);
+            setOngoingSelected(!ongoingSelected);
+          }}
+          onEdit={setLabelTarget}
+          onDelete={onDelete}
+          onEditOngoing={onLabelOngoing}
+        />
       </div>
 
       <input
