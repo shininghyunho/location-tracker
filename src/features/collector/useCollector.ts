@@ -118,7 +118,14 @@ export function useCollector(onPointSaved: () => void) {
     })
       .then((state) => {
         setIsCollecting(state.enabled);
-        if (state.enabled) void drain(); // 앱이 꺼져 있던 동안의 백로그 회수
+        if (state.enabled) {
+          void drain(); // 앱이 꺼져 있던 동안의 백로그 회수
+          // disableStopDetection은 moving→stationary 전환만 막을 뿐, 시작 시 stationary를 moving으로 올려주진 않는다.
+          // 상시 포그라운드가 되도록 moving을 강제한다(이후엔 disableStopDetection이 유지).
+          BackgroundGeolocation.changePace(true).catch(
+            (e) => void appLog('warn', 'changePace', errMsg(e)),
+          );
+        }
       })
       .catch((e) => {
         setError(errMsg(e));
@@ -167,6 +174,10 @@ export function useCollector(onPointSaved: () => void) {
 
       // WhenInUse(앱 사용 중만)여도 켠다 — 포그라운드 수집은 되고, App이 '항상 허용' 승격을 배너로 유도
       await BackgroundGeolocation.start();
+      // disableStopDetection은 시작 시 moving을 만들어주지 않으므로 직접 moving으로 올려 상시 포그라운드를 유지한다
+      await BackgroundGeolocation.changePace(true).catch(
+        (e) => void appLog('warn', 'changePace', errMsg(e)),
+      );
       setIsCollecting(true);
       void appLog('info', 'collector', `수집 시작 (권한 status=${status})`);
     } catch (e) {

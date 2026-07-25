@@ -28,7 +28,13 @@ public class RevivalWorker extends Worker {
             // 유저가 직접 수집을 끈 상태(enabled=false)에선 아무것도 하지 않는다
             if (config.getEnabled()) {
                 BackgroundGeolocation.getInstance(context).start(new TSCallback() {
-                    @Override public void onSuccess() {}
+                    // disableStopDetection은 시작 시 stationary를 moving으로 올려주지 않으므로 직접 moving을 강제해 상시 포그라운드를 유지한다
+                    @Override public void onSuccess() {
+                        BackgroundGeolocation.getInstance(context).changePace(true, new TSCallback() {
+                            @Override public void onSuccess() {}
+                            @Override public void onFailure(String error) {}
+                        });
+                    }
                     @Override public void onFailure(String error) {}
                 });
             }
