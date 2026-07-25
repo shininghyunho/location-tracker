@@ -424,6 +424,7 @@ function App() {
         stays={stayMarkers}
         focus={focus}
         mode={mapMode}
+        fitKey={date}
         footprints={footprints}
         onModeChange={(m) => {
           setMapMode(m);

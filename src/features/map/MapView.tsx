@@ -23,6 +23,7 @@ interface MapViewProps {
   stays: StayMarker[]; // 체류 지점 (marker)
   focus: LatLng | null; // 선택된 stay — 바뀌면 지도를 그 위치로 이동
   mode: MapMode; // day = 하루 궤적, all = 전체 기간 발자국
+  fitKey: string; // 화면 문맥(날짜) — 이것 또는 mode가 바뀔 때만 전체 범위로 카메라 이동
   footprints: Footprint[];
   onModeChange: (mode: MapMode) => void;
   onStayTap: (id: number) => void;
@@ -65,6 +66,7 @@ export function MapView({
   stays,
   focus,
   mode,
+  fitKey,
   footprints,
   onModeChange,
   onStayTap,
@@ -81,6 +83,10 @@ export function MapView({
   // 포커스 해제 시 하루 전체 범위로 돌아가기 위해 마지막 bounds를 기억한다
   const boundsRef = useRef<L.LatLngBounds | null>(null);
   const hadFocusRef = useRef(false);
+  // 주기 재조회(30초 refetch·수집 invalidate)로 데이터만 바뀐 갱신엔 카메라를 안 움직인다 —
+  // fitBounds는 문맥(날짜·모드)당 최초 데이터 도착 때 한 번만. 실제 fit 성공 시에만 key를 소비해
+  // 빈 날짜에 나중에 데이터가 생기는 경우도 커버한다
+  const lastFitRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -101,6 +107,14 @@ export function MapView({
     const map = mapRef.current;
     const layer = layerRef.current;
     if (!map || !layer) return;
+
+    const fitContext = `${mode}:${fitKey}`;
+    const fitOnce = () => {
+      if (boundsRef.current && lastFitRef.current !== fitContext) {
+        map.fitBounds(boundsRef.current, FIT_OPTS);
+        lastFitRef.current = fitContext;
+      }
+    };
 
     layer.clearLayers();
 
@@ -123,7 +137,7 @@ export function MapView({
         footprints.length > 0
           ? L.latLngBounds(footprints.map((f) => [f.lat, f.lng] as L.LatLngTuple))
           : null;
-      if (boundsRef.current) map.fitBounds(boundsRef.current, FIT_OPTS);
+      fitOnce();
       return;
     }
 
@@ -144,8 +158,8 @@ export function MapView({
 
     const all = [...trackPoints, ...stays];
     boundsRef.current = all.length > 0 ? L.latLngBounds(all.map((p) => [p.lat, p.lng] as L.LatLngTuple)) : null;
-    if (boundsRef.current) map.fitBounds(boundsRef.current, FIT_OPTS);
-  }, [mode, footprints, trackPoints, stays]);
+    fitOnce();
+  }, [mode, fitKey, footprints, trackPoints, stays]);
 
   // flyTo 비행 중엔 렌더러 컨테이너가 매 프레임 CSS scale돼 궤적 선이 화면을 덮는다
   // (CSS 줌 전환과 별개 경로라 zoom-anim 클래스가 안 붙음) — 비행 동안만 벡터 팬을 숨긴다
