@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getAllLabels, getStaysByLabel } from '../../db/stays';
+import { getLabelVisitCounts, getStaysByLabel } from '../../db/stays';
 import { fmtDateWithDay, fmtDuration, todayStr } from '../../lib/date';
 import { computePlaceSummary } from './placeSummary';
+import { getSearchHistory, pushSearchHistory, removeSearchHistory } from './searchHistory';
 
 const HOUR_MS = 3_600_000;
 
@@ -26,11 +27,23 @@ interface SearchPanelProps {
 
 export function SearchPanel({ onClose, onPickDate, initialQuery }: SearchPanelProps) {
   const [query, setQuery] = useState(initialQuery ?? '');
-  const { data: labels = [] } = useQuery({ queryKey: ['search', 'labels'], queryFn: getAllLabels });
+  const [history, setHistory] = useState(getSearchHistory);
+  const { data: places = [] } = useQuery({
+    queryKey: ['search', 'labels'],
+    queryFn: getLabelVisitCounts,
+  });
   const q = query.trim();
   // 별도 선택 state 없이 입력값이 라벨과 정확히 일치하면 선택으로 본다 — 목록 탭이 입력을 채우는 방식
-  const selected = labels.includes(q) ? q : null;
-  const matches = q === '' ? labels : labels.filter((l) => l.includes(q));
+  const selected = places.some((p) => p.label === q) ? q : null;
+  const matches = q === '' ? places : places.filter((p) => p.label.includes(q));
+
+  // 선택되는 순간이 곧 검색 — 진입 경로(타이핑·목록 탭·발자국 원 탭) 구분 없이 기록
+  useEffect(() => {
+    if (selected !== null) setHistory(pushSearchHistory(selected));
+  }, [selected]);
+
+  // 이름이 바뀌었거나 지워져 더는 없는 라벨은 기록에 있어도 감춘다
+  const recent = history.filter((l) => places.some((p) => p.label === l));
 
   const { data: visits = [] } = useQuery({
     queryKey: ['search', 'visits', selected],
@@ -75,23 +88,61 @@ export function SearchPanel({ onClose, onPickDate, initialQuery }: SearchPanelPr
 
       <div className="mt-3 flex flex-col gap-3 overflow-y-auto pb-4">
         {selected === null ? (
-          <section className="rounded-lg bg-white py-1 shadow-sm dark:bg-slate-900">
-            {matches.map((l) => (
-              <button
-                key={l}
-                type="button"
-                onClick={() => setQuery(l)}
-                className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-slate-900 dark:text-slate-100"
-              >
-                {l}
-              </button>
-            ))}
-            {matches.length === 0 && (
-              <p className="p-4 text-center text-sm text-slate-400 dark:text-slate-500">
-                일치하는 장소가 없습니다
-              </p>
+          <>
+            {q === '' && recent.length > 0 && (
+              <section className="rounded-lg bg-white py-1 shadow-sm dark:bg-slate-900">
+                <h3 className="px-4 pb-1 pt-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                  최근 검색
+                </h3>
+                {recent.map((l) => (
+                  <div key={l} className="flex items-center">
+                    <button
+                      type="button"
+                      onClick={() => setQuery(l)}
+                      className="min-w-0 flex-1 truncate px-4 py-2.5 text-left text-sm font-semibold text-slate-900 dark:text-slate-100"
+                    >
+                      {l}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHistory(removeSearchHistory(l))}
+                      aria-label={`${l} 검색 기록 삭제`}
+                      className="px-4 py-2.5 text-sm text-slate-400 dark:text-slate-500"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </section>
             )}
-          </section>
+            <section className="rounded-lg bg-white py-1 shadow-sm dark:bg-slate-900">
+              {q === '' && (
+                <h3 className="px-4 pb-1 pt-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                  최다 방문
+                </h3>
+              )}
+              {matches.map((p) => (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => setQuery(p.label)}
+                  className="flex w-full items-baseline justify-between gap-3 px-4 py-2.5 text-left"
+                >
+                  <span className="min-w-0 truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {p.label}
+                  </span>
+                  <span className="shrink-0 text-xs tabular-nums text-slate-400 dark:text-slate-500">
+                    {p.visits.toLocaleString()}회
+                  </span>
+                </button>
+              ))}
+              {matches.length === 0 && (
+                <p className="p-4 text-center text-sm text-slate-400 dark:text-slate-500">
+                  일치하는 장소가 없습니다
+                </p>
+              )}
+            </section>
+          </>
         ) : (
           <>
             <section className="rounded-lg bg-white p-3 shadow-sm dark:bg-slate-900">

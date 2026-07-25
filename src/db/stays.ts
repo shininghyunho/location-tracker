@@ -291,6 +291,24 @@ export async function getAllLabels(): Promise<string[]> {
   return ((res.values ?? []) as { label: string }[]).map((r) => r.label);
 }
 
+// 검색 화면 '최다 방문' 목록용
+export async function getLabelVisitCounts(): Promise<{ label: string; visits: number }[]> {
+  if (!isNative) {
+    const counts = new Map<string, number>();
+    for (const s of webStays) {
+      if (!s.deleted && s.label !== null) counts.set(s.label, (counts.get(s.label) ?? 0) + 1);
+    }
+    return [...counts]
+      .map(([label, visits]) => ({ label, visits }))
+      .sort((a, b) => b.visits - a.visits || a.label.localeCompare(b.label));
+  }
+  const db = await getDb();
+  const res = await db.query(
+    'SELECT label, COUNT(*) AS visits FROM stays WHERE deleted = 0 AND label IS NOT NULL GROUP BY label ORDER BY visits DESC, label',
+  );
+  return (res.values ?? []) as { label: string; visits: number }[];
+}
+
 // 겹침 판정용 — 저장하려는 이름을 이미 다른 체류가 쓰고 있으면 합쳐진다고 알린다
 export async function countStaysByLabel(label: string): Promise<number> {
   if (!isNative) return webStays.filter((s) => !s.deleted && s.label === label).length;
