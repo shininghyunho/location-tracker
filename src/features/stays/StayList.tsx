@@ -90,7 +90,9 @@ export function StayList({
       )}
 
       {stays.length === 0 && !ongoing && (
-        <li className="p-6 text-center text-sm text-slate-400">이 날짜의 체류 기록이 없습니다</li>
+        <li className="p-6 text-center text-sm text-slate-400 dark:text-slate-500">
+          이 날짜의 체류 기록이 없습니다
+        </li>
       )}
     </ul>
   );

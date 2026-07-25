@@ -8,9 +8,12 @@ interface BottomSheetProps {
 
 export function BottomSheet({ onClose, compact, children }: BottomSheetProps) {
   return (
-    <div className="fixed inset-0 z-[1100] flex flex-col justify-end bg-black/40" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[1100] flex flex-col justify-end bg-black/40 dark:bg-black/60"
+      onClick={onClose}
+    >
       <div
-        className={`rounded-t-2xl bg-white ${compact ? 'p-4' : 'p-5'} pb-8`}
+        className={`rounded-t-2xl bg-white dark:bg-slate-900 ${compact ? 'p-4' : 'p-5'} pb-8`}
         onClick={(e) => e.stopPropagation()}
       >
         {children}

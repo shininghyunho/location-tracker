@@ -265,13 +265,13 @@ function App() {
   }, [selected, ongoingSelected, ongoing, snapCoord]);
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col gap-3 bg-slate-50 p-4">
+    <div className="mx-auto flex min-h-screen max-w-md flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950">
       <header className="flex items-center justify-between pt-6">
         <h1>
           <button
             type="button"
             onClick={() => changeDate(today)}
-            className="text-xl font-bold text-slate-900"
+            className="text-xl font-bold text-slate-900 dark:text-slate-100"
           >
             위치트래커
           </button>
@@ -283,8 +283,8 @@ function App() {
             onClick={() => setOverlay('collector')}
             className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
               isCollecting
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                : 'border-amber-300 bg-amber-50 text-amber-700'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                : 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300'
             }`}
           >
             {isCollecting ? '● 수집 중' : '○ 수집 꺼짐'}
@@ -296,7 +296,7 @@ function App() {
               setSearchLabel(null);
               setOverlay('search');
             }}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 dark:border-slate-600 dark:text-slate-300"
           >
             <svg
               viewBox="0 0 16 16"
@@ -314,7 +314,7 @@ function App() {
             type="button"
             aria-label="통계"
             onClick={() => setOverlay('stats')}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 dark:border-slate-600 dark:text-slate-300"
           >
             <svg viewBox="0 0 16 16" className="h-5 w-5" fill="currentColor" aria-hidden="true">
               <rect x="1.5" y="8" width="3" height="6.5" rx="0.75" />
@@ -327,7 +327,7 @@ function App() {
               type="button"
               aria-label="메뉴"
               onClick={() => setOverlay(overlay === 'menu' ? null : 'menu')}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600"
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 dark:border-slate-600 dark:text-slate-300"
             >
               ⚙
             </button>
@@ -335,26 +335,26 @@ function App() {
               <>
                 {/* 지도(leaflet z-index ~1000)보다 위 — 바깥 탭으로 닫기 */}
                 <div className="fixed inset-0 z-[1040]" onClick={() => setOverlay(null)} />
-                <div className="absolute right-0 z-[1050] mt-1 w-36 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                <div className="absolute right-0 z-[1050] mt-1 w-36 rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
                   <button
                     type="button"
                     onClick={() => setOverlay('importGuide')}
                     disabled={importing !== null}
-                    className="block w-full px-4 py-2 text-left text-sm text-slate-700 disabled:text-slate-300"
+                    className="block w-full px-4 py-2 text-left text-sm text-slate-700 disabled:text-slate-300 dark:text-slate-200 dark:disabled:text-slate-600"
                   >
                     {importing ? '가져오는 중…' : '가져오기'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setOverlay('backup')}
-                    className="block w-full px-4 py-2 text-left text-sm text-slate-700"
+                    className="block w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-200"
                   >
                     내보내기
                   </button>
                   <button
                     type="button"
                     onClick={() => setOverlay('about')}
-                    className="block w-full px-4 py-2 text-left text-sm text-slate-700"
+                    className="block w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-200"
                   >
                     앱 정보
                   </button>
@@ -365,14 +365,18 @@ function App() {
         </div>
       </header>
 
-      {error && <p className="rounded-lg bg-red-100 p-3 text-sm text-red-700">{error}</p>}
+      {error && (
+        <p className="rounded-lg bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+          {error}
+        </p>
+      )}
 
       {/* 권한 미흡 안내 — 수집 안 켜진 상태에서 '앱 사용 중만'/'거부'면 승격을 유도 */}
       {!isCollecting &&
         (permStatus === AuthorizationStatus.WhenInUse ||
           permStatus === AuthorizationStatus.Denied ||
           permStatus === AuthorizationStatus.Restricted) && (
-          <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+          <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">
             <p>
               {permStatus === AuthorizationStatus.WhenInUse
                 ? '‘앱 사용 중에만 허용’ 상태예요. 앱이 꺼지면 기록이 끊깁니다.'
@@ -385,14 +389,14 @@ function App() {
             >
               권한 다시 요청
             </button>
-            <p className="mt-1.5 text-xs text-amber-600">
+            <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
               창이 안 뜨면 설정 &gt; 앱 &gt; 위치트래커 &gt; 권한 &gt; 위치에서 ‘항상 허용’으로 바꿔주세요.
             </p>
           </div>
         )}
 
       {importing && (
-        <p className="rounded-lg bg-blue-100 p-3 text-sm text-blue-700">
+        <p className="rounded-lg bg-blue-100 p-3 text-sm text-blue-700 dark:bg-blue-950 dark:text-blue-300">
           가져오는 중…{' '}
           {importing.total > 0 && `${Math.round((importing.done / importing.total) * 100)}%`}
         </p>
@@ -400,20 +404,28 @@ function App() {
 
       <div
         {...swipeDate}
-        className="flex items-center justify-between rounded-lg bg-white p-2 shadow-sm"
+        className="flex items-center justify-between rounded-lg bg-white p-2 shadow-sm dark:bg-slate-900"
       >
-        <button type="button" onClick={() => changeDate(addDaysStr(date, -1))} className="px-4 py-1 text-lg text-slate-600">
+        <button
+          type="button"
+          onClick={() => changeDate(addDaysStr(date, -1))}
+          className="px-4 py-1 text-lg text-slate-600 dark:text-slate-300"
+        >
           ◀
         </button>
-        <button type="button" onClick={() => setOverlay('calendar')} className="text-sm font-semibold text-slate-900">
+        <button
+          type="button"
+          onClick={() => setOverlay('calendar')}
+          className="text-sm font-semibold text-slate-900 dark:text-slate-100"
+        >
           {fmtDateWithDay(date)}
-          {date === today && <span className="ml-1 text-blue-600">(오늘)</span>}
+          {date === today && <span className="ml-1 text-blue-600 dark:text-blue-400">(오늘)</span>}
         </button>
         <button
           type="button"
           onClick={() => changeDate(addDaysStr(date, 1))}
           disabled={date >= today}
-          className="px-4 py-1 text-lg text-slate-600 disabled:text-slate-300"
+          className="px-4 py-1 text-lg text-slate-600 disabled:text-slate-300 dark:text-slate-300 dark:disabled:text-slate-600"
         >
           ▶
         </button>

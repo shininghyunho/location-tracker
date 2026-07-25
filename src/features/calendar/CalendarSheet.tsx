@@ -41,22 +41,24 @@ export function CalendarSheet({ value, today, dataDays, onPick, onClose }: Calen
         <button
           type="button"
           onClick={() => moveMonth(-1)}
-          className="px-3 py-1 text-lg text-slate-600"
+          className="px-3 py-1 text-lg text-slate-600 dark:text-slate-300"
         >
           ◀
         </button>
-        <span className="text-base font-bold text-slate-900">{viewMonth.slice(0, 7)}</span>
+        <span className="text-base font-bold text-slate-900 dark:text-slate-100">
+          {viewMonth.slice(0, 7)}
+        </span>
         <button
           type="button"
           onClick={() => moveMonth(1)}
           disabled={nextDisabled}
-          className="px-3 py-1 text-lg text-slate-600 disabled:text-slate-300"
+          className="px-3 py-1 text-lg text-slate-600 disabled:text-slate-300 dark:text-slate-300 dark:disabled:text-slate-600"
         >
           ▶
         </button>
       </div>
       <div {...swipeMonth} className="overflow-x-hidden">
-        <div className="grid grid-cols-7 gap-1 pb-1 text-center text-xs text-slate-400">
+        <div className="grid grid-cols-7 gap-1 pb-1 text-center text-xs text-slate-400 dark:text-slate-500">
           {WEEKDAYS.map((w) => (
             <div key={w} className="py-1">
               {w}
@@ -90,8 +92,8 @@ export function CalendarSheet({ value, today, dataDays, onPick, onClose }: Calen
                   isSelected
                     ? 'bg-blue-600 font-semibold text-white'
                     : isFuture
-                      ? 'text-slate-300'
-                      : 'text-slate-700 active:bg-slate-100'
+                      ? 'text-slate-300 dark:text-slate-600'
+                      : 'text-slate-700 active:bg-slate-100 dark:text-slate-300 dark:active:bg-slate-800'
                 }`}
               >
                 {Number(cell.slice(8, 10))}
@@ -106,7 +108,7 @@ export function CalendarSheet({ value, today, dataDays, onPick, onClose }: Calen
       <button
         type="button"
         onClick={() => onPick(today)}
-        className="mt-4 w-full rounded-lg bg-slate-100 py-3 text-sm font-semibold text-slate-700"
+        className="mt-4 w-full rounded-lg bg-slate-100 py-3 text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200"
       >
         오늘
       </button>

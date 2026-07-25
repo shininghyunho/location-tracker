@@ -40,25 +40,29 @@ export function CollectorSheet({
   const [confirmStop, setConfirmStop] = useState(false);
   return (
     <BottomSheet onClose={onClose}>
-      <h2 className="text-lg font-bold text-slate-900">수집 상태</h2>
+      <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">수집 상태</h2>
       <dl className="mt-3 space-y-1.5 text-sm">
         <div className="flex justify-between">
-          <dt className="text-slate-500">상태</dt>
+          <dt className="text-slate-500 dark:text-slate-400">상태</dt>
           <dd
             className={
-              isCollecting ? 'font-semibold text-emerald-600' : 'font-semibold text-slate-500'
+              isCollecting
+                ? 'font-semibold text-emerald-600 dark:text-emerald-400'
+                : 'font-semibold text-slate-500 dark:text-slate-400'
             }
           >
             {isCollecting ? '켜짐 · 1분 간격' : '꺼짐'}
           </dd>
         </div>
         <div className="flex justify-between">
-          <dt className="text-slate-500">위치 권한</dt>
-          <dd className="text-slate-700">{permLabel(permStatus)}</dd>
+          <dt className="text-slate-500 dark:text-slate-400">위치 권한</dt>
+          <dd className="text-slate-700 dark:text-slate-300">{permLabel(permStatus)}</dd>
         </div>
         <div className="flex justify-between">
-          <dt className="text-slate-500">누적 위치</dt>
-          <dd className="text-slate-700">{totalPoints.toLocaleString()} points</dd>
+          <dt className="text-slate-500 dark:text-slate-400">누적 위치</dt>
+          <dd className="text-slate-700 dark:text-slate-300">
+            {totalPoints.toLocaleString()} points
+          </dd>
         </div>
       </dl>
       <div className="mt-5">
@@ -72,12 +76,14 @@ export function CollectorSheet({
           </button>
         ) : confirmStop ? (
           <div>
-            <p className="text-sm text-red-600">중지하면 다시 켤 때까지 이동이 기록되지 않아요.</p>
+            <p className="text-sm text-red-600 dark:text-red-400">
+              중지하면 다시 켤 때까지 이동이 기록되지 않아요.
+            </p>
             <div className="mt-2 flex gap-2">
               <button
                 type="button"
                 onClick={() => setConfirmStop(false)}
-                className="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-600"
+                className="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-600 dark:border-slate-600 dark:text-slate-300"
               >
                 계속 수집
               </button>
@@ -94,7 +100,7 @@ export function CollectorSheet({
           <button
             type="button"
             onClick={() => setConfirmStop(true)}
-            className="w-full rounded-lg border border-red-200 py-2.5 text-sm font-semibold text-red-600"
+            className="w-full rounded-lg border border-red-200 py-2.5 text-sm font-semibold text-red-600 dark:border-red-900 dark:text-red-400"
           >
             수집 중지
           </button>

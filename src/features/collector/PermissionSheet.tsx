@@ -10,19 +10,21 @@ interface PermissionSheetProps {
 export function PermissionSheet({ onConfirm, onClose }: PermissionSheetProps) {
   return (
     <BottomSheet onClose={onClose}>
-      <h2 className="text-lg font-bold text-slate-900">위치 ‘항상 허용’이 필요해요</h2>
-      <p className="mt-2 text-sm leading-relaxed text-slate-600">
+      <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+        위치 ‘항상 허용’이 필요해요
+      </h2>
+      <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
         앱이 꺼져 있거나 화면 밖에 있을 때도 이동을 기록하려면 위치 권한을 <b>‘항상 허용’</b>으로
         켜야 해요. 안드로이드는 먼저 ‘앱 사용 중 허용’을 물은 뒤 ‘항상 허용’을 한 번 더 확인합니다.
       </p>
-      <p className="mt-2 text-xs text-slate-400">
+      <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
         위치 데이터는 이 기기에만 저장되고 어디에도 전송되지 않아요.
       </p>
       <div className="mt-5 flex gap-2">
         <button
           type="button"
           onClick={onClose}
-          className="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-600"
+          className="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-600 dark:border-slate-600 dark:text-slate-300"
         >
           취소
         </button>

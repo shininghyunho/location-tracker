@@ -54,8 +54,10 @@ export function ImportGuideSheet({ onPickFile, onClose }: ImportGuideSheetProps)
   return (
     <BottomSheet onClose={onClose}>
       <div className="flex items-baseline justify-between">
-        <h2 className="text-lg font-bold text-slate-900">구글 타임라인 가져오기</h2>
-        <span className="text-sm text-slate-400">
+        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+          구글 타임라인 가져오기
+        </h2>
+        <span className="text-sm text-slate-400 dark:text-slate-500">
           {step + 1}/{STEPS.length}
         </span>
       </div>
@@ -74,9 +76,9 @@ export function ImportGuideSheet({ onPickFile, onClose }: ImportGuideSheetProps)
           <img
             src={STEPS[step].img}
             alt={`가져오기 ${step + 1}단계`}
-            className="mx-auto h-[40vh] rounded-lg border border-slate-200 object-contain"
+            className="mx-auto h-[40vh] rounded-lg border border-slate-200 object-contain dark:border-slate-700"
           />
-          <p className="mt-3 min-h-10 text-center text-sm leading-relaxed text-slate-600">
+          <p className="mt-3 min-h-10 text-center text-sm leading-relaxed text-slate-600 dark:text-slate-300">
             {STEPS[step].caption}
           </p>
         </div>
@@ -86,7 +88,7 @@ export function ImportGuideSheet({ onPickFile, onClose }: ImportGuideSheetProps)
           type="button"
           onClick={() => moveStep(-1)}
           disabled={step === 0}
-          className="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-600 disabled:text-slate-300"
+          className="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-600 disabled:text-slate-300 dark:border-slate-600 dark:text-slate-300 dark:disabled:text-slate-600"
         >
           이전
         </button>

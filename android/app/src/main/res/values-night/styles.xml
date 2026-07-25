@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- 다크 모드 스플래시 — 앱 첫 화면(dark:bg-slate-950)과 같은 단색으로 흰 화면 플래시 방지 -->
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="android:background">#020617</item>
+    </style>
+</resources>

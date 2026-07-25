@@ -2,7 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
+/* UA 렌더링(폼 컨트롤·confirm 다이얼로그·스크롤바)도 시스템 테마를 따르게 한다 */
+:root {
+  color-scheme: light dark;
+}
+
+@layer base {
+  /* 오버스크롤·로드 직후 등 루트 div 밖이 비칠 때도 테마 배경 유지 */
+  html {
+    @apply bg-slate-50 dark:bg-slate-950;
+  }
+}
+
 /* 줌 애니메이션 중 벡터 오버레이(궤적 polyline) 숨김 — SVG 레이어째 CSS scale돼 선이 화면을 덮는 문제 방지 */
 .leaflet-zoom-anim .leaflet-overlay-pane {
   visibility: hidden;
+}
+
+/* 지도 타일은 다크에서도 라이트 유지 — 그 위 leaflet 기본 컨트롤만 앱 UI와 같은 다크로.
+   leaflet.css가 번들에서 이 파일보다 뒤라 .leaflet-container를 붙여 특이도로 이긴다 */
+@media (prefers-color-scheme: dark) {
+  .leaflet-container .leaflet-bar a {
+    background-color: #1e293b;
+    border-bottom-color: #334155;
+    color: #e2e8f0;
+  }
+  .leaflet-container .leaflet-bar a.leaflet-disabled {
+    background-color: #1e293b;
+    color: #475569;
+  }
+  /* leaflet 원본이 .leaflet-container .leaflet-control-attribution(동일 특이도)라 클래스 하나 더 */
+  .leaflet-container .leaflet-control-attribution.leaflet-control {
+    background-color: rgba(30, 41, 59, 0.8);
+    color: #94a3b8;
+  }
+  .leaflet-container .leaflet-control-attribution.leaflet-control a {
+    color: #94a3b8;
+  }
 }

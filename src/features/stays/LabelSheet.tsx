@@ -84,18 +84,19 @@ export function LabelSheet({ stay, onClose }: { stay: Stay; onClose: () => void 
 
   return (
     <BottomSheet onClose={onClose} compact>
-      <h2 className="text-lg font-bold text-slate-900">장소 이름</h2>
+      <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">장소 이름</h2>
       {mergeCount !== null ? (
         <>
-          <p className="pt-2 text-sm text-slate-600">
-            <span className="font-semibold text-slate-900">'{query}'</span>은(는) 이미 다른 기록
+          <p className="pt-2 text-sm text-slate-600 dark:text-slate-300">
+            <span className="font-semibold text-slate-900 dark:text-slate-100">'{query}'</span>
+            은(는) 이미 다른 기록
             {mergeCount}개가 쓰는 이름이에요. 저장하면 같은 장소로 합쳐져요.
           </p>
           <div className="flex gap-2 pt-4">
             <button
               type="button"
               onClick={() => setMergeCount(null)}
-              className="flex-1 rounded-lg bg-slate-200 py-3 text-sm font-semibold text-slate-700"
+              className="flex-1 rounded-lg bg-slate-200 py-3 text-sm font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200"
             >
               취소
             </button>
@@ -103,7 +104,7 @@ export function LabelSheet({ stay, onClose }: { stay: Stay; onClose: () => void 
               type="button"
               onClick={() => doSave(query)}
               disabled={saving}
-              className="flex-1 rounded-lg bg-blue-600 py-3 text-sm font-semibold text-white disabled:bg-blue-300"
+              className="flex-1 rounded-lg bg-blue-600 py-3 text-sm font-semibold text-white disabled:bg-blue-300 dark:disabled:bg-blue-900"
             >
               {saving ? '합치는 중…' : '합치기'}
             </button>
@@ -111,14 +112,14 @@ export function LabelSheet({ stay, onClose }: { stay: Stay; onClose: () => void 
         </>
       ) : (
         <>
-          <div className="pb-3 text-xs text-slate-400">
+          <div className="pb-3 text-xs text-slate-400 dark:text-slate-500">
             {stay.lat.toFixed(5)}, {stay.lng.toFixed(5)}
           </div>
           <input
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder="예: 집, 회사"
-            className="w-full rounded-lg border border-slate-300 p-3 text-sm"
+            className="w-full rounded-lg border border-slate-300 bg-transparent p-3 text-sm text-slate-900 dark:border-slate-600 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
           {suggestions.length > 0 && (
             <div className="flex flex-wrap gap-2 pt-3">
@@ -127,7 +128,7 @@ export function LabelSheet({ stay, onClose }: { stay: Stay; onClose: () => void 
                   key={l}
                   type="button"
                   onClick={() => setValue(l)}
-                  className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600"
+                  className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300"
                 >
                   {l}
                 </button>
@@ -139,7 +140,7 @@ export function LabelSheet({ stay, onClose }: { stay: Stay; onClose: () => void 
               type="button"
               onClick={onSuggest}
               disabled={suggestLoading}
-              className="mt-3 w-full rounded-lg border border-slate-300 py-2 text-xs font-semibold text-slate-600 disabled:text-slate-300"
+              className="mt-3 w-full rounded-lg border border-slate-300 py-2 text-xs font-semibold text-slate-600 disabled:text-slate-300 dark:border-slate-600 dark:text-slate-300 dark:disabled:text-slate-600"
             >
               {suggestLoading ? '주변 장소 찾는 중…' : '주변 장소 추천'}
             </button>
@@ -153,23 +154,27 @@ export function LabelSheet({ stay, onClose }: { stay: Stay; onClose: () => void 
                       key={p.name}
                       type="button"
                       onClick={() => setValue(p.name)}
-                      className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600"
+                      className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600 dark:bg-blue-950 dark:text-blue-300"
                     >
                       {p.name} · {p.distanceM}m
                     </button>
                   ))}
                 </div>
               ) : (
-                <p className="pt-3 text-xs text-slate-400">주변에서 찾은 장소가 없어요</p>
+                <p className="pt-3 text-xs text-slate-400 dark:text-slate-500">
+                  주변에서 찾은 장소가 없어요
+                </p>
               )
             ) : (
-              <p className="pt-3 text-xs text-slate-400">{SUGGEST_ERROR_MSG[suggest.reason]}</p>
+              <p className="pt-3 text-xs text-slate-400 dark:text-slate-500">
+                {SUGGEST_ERROR_MSG[suggest.reason]}
+              </p>
             ))}
           <div className="flex gap-2 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-lg bg-slate-200 py-3 text-sm font-semibold text-slate-700"
+              className="flex-1 rounded-lg bg-slate-200 py-3 text-sm font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200"
             >
               취소
             </button>
@@ -177,7 +182,7 @@ export function LabelSheet({ stay, onClose }: { stay: Stay; onClose: () => void 
               type="button"
               onClick={onSave}
               disabled={saving}
-              className="flex-1 rounded-lg bg-blue-600 py-3 text-sm font-semibold text-white disabled:bg-blue-300"
+              className="flex-1 rounded-lg bg-blue-600 py-3 text-sm font-semibold text-white disabled:bg-blue-300 dark:disabled:bg-blue-900"
             >
               {saving ? '저장 중…' : '저장'}
             </button>

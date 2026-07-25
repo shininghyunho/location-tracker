@@ -15,9 +15,11 @@ function fmtHours(ms: number): string {
 
 function Highlight({ k, v }: { k: string; v: string }) {
   return (
-    <div className="rounded-lg bg-slate-100 px-2.5 py-2">
-      <div className="text-[10px] text-slate-500">{k}</div>
-      <div className="text-sm font-extrabold tabular-nums text-slate-900">{v}</div>
+    <div className="rounded-lg bg-slate-100 px-2.5 py-2 dark:bg-slate-800">
+      <div className="text-[10px] text-slate-500 dark:text-slate-400">{k}</div>
+      <div className="text-sm font-extrabold tabular-nums text-slate-900 dark:text-slate-100">
+        {v}
+      </div>
     </div>
   );
 }
@@ -55,9 +57,10 @@ export function YearStats({ stays, fromTs, toTs }: YearStatsProps) {
 
   return (
     <>
-      <section className="rounded-lg bg-white p-3 shadow-sm">
-        <h3 className="pb-2 text-sm font-bold text-slate-900">
-          기록한 날 <span className="font-semibold text-slate-500">{recordedDays}일</span>
+      <section className="rounded-lg bg-white p-3 shadow-sm dark:bg-slate-900">
+        <h3 className="pb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+          기록한 날{' '}
+          <span className="font-semibold text-slate-500 dark:text-slate-400">{recordedDays}일</span>
         </h3>
         <div className="flex gap-px">
           {weeks.map((col, w) => (
@@ -76,15 +79,17 @@ export function YearStats({ stays, fromTs, toTs }: YearStatsProps) {
             </div>
           ))}
         </div>
-        <div className="flex justify-between pt-1 text-[10px] text-slate-400">
+        <div className="flex justify-between pt-1 text-[10px] text-slate-400 dark:text-slate-500">
           {MONTH_AXIS.map((m) => (
             <span key={m}>{m}</span>
           ))}
         </div>
       </section>
 
-      <section className="rounded-lg bg-white p-3 shadow-sm">
-        <h3 className="pb-2 text-sm font-bold text-slate-900">{year}년 하이라이트</h3>
+      <section className="rounded-lg bg-white p-3 shadow-sm dark:bg-slate-900">
+        <h3 className="pb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+          {year}년 하이라이트
+        </h3>
         <div className="grid grid-cols-2 gap-2">
           <Highlight
             k="가장 오래 머문 곳"

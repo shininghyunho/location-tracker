@@ -36,26 +36,30 @@ export function StayCard({
     <li
       ref={cardRef}
       onClick={onClick}
-      className={`rounded-lg bg-white p-3 shadow-sm active:bg-slate-100 ${
-        live ? 'border-2 border-blue-200' : ''
+      className={`rounded-lg bg-white p-3 shadow-sm active:bg-slate-100 dark:bg-slate-900 dark:active:bg-slate-800 ${
+        live ? 'border-2 border-blue-200 dark:border-blue-800' : ''
       } ${selected ? 'ring-2 ring-inset ring-blue-500' : ''}`}
     >
       <div className="flex items-baseline justify-between">
-        <span className={`font-semibold ${live ? 'text-blue-700' : 'text-slate-900'}`}>
+        <span
+          className={`font-semibold ${
+            live ? 'text-blue-700 dark:text-blue-300' : 'text-slate-900 dark:text-slate-100'
+          }`}
+        >
           {title}
         </span>
-        <span className="text-sm text-slate-500">
+        <span className="text-sm text-slate-500 dark:text-slate-400">
           {fmtDuration(Date.parse(endTs) - Date.parse(startTs))}
           {live ? '째' : ''}
         </span>
       </div>
-      <div className="text-sm text-slate-500">
+      <div className="text-sm text-slate-500 dark:text-slate-400">
         {fmtTime(startTs)} ~ {live ? '진행 중' : fmtTime(endTs)}
       </div>
       {/* 좌표는 매일 보는 정보가 아니라서 펼쳤을 때만 (U19) */}
       {selected && (
         <>
-          <div className="pt-1 text-xs text-slate-400">
+          <div className="pt-1 text-xs text-slate-400 dark:text-slate-500">
             {lat.toFixed(5)}, {lng.toFixed(5)}
           </div>
           <div className="flex gap-2 pt-2">
@@ -65,7 +69,7 @@ export function StayCard({
                 e.stopPropagation();
                 onEdit();
               }}
-              className="flex-1 rounded-md bg-blue-50 py-2 text-sm font-semibold text-blue-700"
+              className="flex-1 rounded-md bg-blue-50 py-2 text-sm font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300"
             >
               수정
             </button>
@@ -76,7 +80,7 @@ export function StayCard({
                   e.stopPropagation();
                   onDelete();
                 }}
-                className="flex-1 rounded-md bg-red-50 py-2 text-sm font-semibold text-red-600"
+                className="flex-1 rounded-md bg-red-50 py-2 text-sm font-semibold text-red-600 dark:bg-red-950 dark:text-red-400"
               >
                 삭제
               </button>

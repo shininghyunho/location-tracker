@@ -28,7 +28,7 @@ function Heatmap({ grid }: { grid: number[][] }) {
     <div className="mt-2 flex flex-col gap-0.5">
       {grid.map((row, w) => (
         <div key={WEEKDAYS[w]} className="flex items-center gap-0.5">
-          <span className="w-4 text-[10px] text-slate-400">{WEEKDAYS[w]}</span>
+          <span className="w-4 text-[10px] text-slate-400 dark:text-slate-500">{WEEKDAYS[w]}</span>
           {row.map((ms, h) => (
             <div
               key={h}
@@ -38,7 +38,7 @@ function Heatmap({ grid }: { grid: number[][] }) {
           ))}
         </div>
       ))}
-      <div className="flex justify-between pl-4 text-[10px] text-slate-400">
+      <div className="flex justify-between pl-4 text-[10px] text-slate-400 dark:text-slate-500">
         <span>0시</span>
         <span>6시</span>
         <span>12시</span>
@@ -114,20 +114,20 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
   const maxWeekday = Math.max(1, ...weekdayBars.map((b) => b.total));
 
   return (
-    <div className="fixed inset-0 z-[1100] flex flex-col bg-slate-50 p-4">
+    <div className="fixed inset-0 z-[1100] flex flex-col bg-slate-50 p-4 dark:bg-slate-950">
       <header className="flex items-center gap-2 pb-3 pt-6">
         <button
           type="button"
           onClick={onClose}
           aria-label="뒤로"
-          className="rounded-md px-2 py-1 text-xl text-slate-600"
+          className="rounded-md px-2 py-1 text-xl text-slate-600 dark:text-slate-300"
         >
           ←
         </button>
-        <h2 className="text-lg font-bold text-slate-900">통계</h2>
+        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">통계</h2>
       </header>
 
-      <div className="flex items-center justify-between rounded-lg bg-white p-2 shadow-sm">
+      <div className="flex items-center justify-between rounded-lg bg-white p-2 shadow-sm dark:bg-slate-900">
         <div className="flex gap-1">
           {(['week', 'month', 'year'] as const).map((u) => (
             <button
@@ -135,7 +135,7 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
               type="button"
               onClick={() => changeUnit(u)}
               className={`rounded-md px-3 py-1 text-sm font-semibold ${
-                unit === u ? 'bg-blue-600 text-white' : 'text-slate-600'
+                unit === u ? 'bg-blue-600 text-white' : 'text-slate-600 dark:text-slate-300'
               }`}
             >
               {UNIT_LABELS[u]}
@@ -143,15 +143,21 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
           ))}
         </div>
         <div className="flex items-center">
-          <button type="button" onClick={() => moveBy(-1)} className="px-3 py-1 text-lg text-slate-600">
+          <button
+            type="button"
+            onClick={() => moveBy(-1)}
+            className="px-3 py-1 text-lg text-slate-600 dark:text-slate-300"
+          >
             ◀
           </button>
-          <span className="text-sm font-semibold text-slate-900">{periodLabel(unit, anchor)}</span>
+          <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            {periodLabel(unit, anchor)}
+          </span>
           <button
             type="button"
             onClick={() => moveBy(1)}
             disabled={isCurrentPeriod(unit, anchor, today)}
-            className="px-3 py-1 text-lg text-slate-600 disabled:text-slate-300"
+            className="px-3 py-1 text-lg text-slate-600 disabled:text-slate-300 dark:text-slate-300 dark:disabled:text-slate-600"
           >
             ▶
           </button>
@@ -174,22 +180,28 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
             <YearStats stays={stays} fromTs={fromTs} toTs={toTs} />
           ) : (
             <>
-              <section className="rounded-lg bg-white p-3 shadow-sm">
-                <h3 className="pb-2 text-sm font-bold text-slate-900">장소 랭킹</h3>
+              <section className="rounded-lg bg-white p-3 shadow-sm dark:bg-slate-900">
+                <h3 className="pb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                  장소 랭킹
+                </h3>
                 <ul className="flex flex-col gap-2">
                   {stats.places.map((p) => (
                     <li key={p.key} onClick={() => setExpanded(expanded === p.key ? null : p.key)}>
                       <div className="flex items-baseline justify-between text-sm">
                         <span
-                          className={`font-semibold ${p.key === UNLABELED ? 'text-slate-400' : 'text-slate-900'}`}
+                          className={`font-semibold ${
+                            p.key === UNLABELED
+                              ? 'text-slate-400 dark:text-slate-500'
+                              : 'text-slate-900 dark:text-slate-100'
+                          }`}
                         >
                           {p.key}
                         </span>
-                        <span className="text-slate-500">
+                        <span className="text-slate-500 dark:text-slate-400">
                           {fmtDuration(p.durationMs)} · {p.visitCount}회
                         </span>
                       </div>
-                      <div className="mt-1 h-2 rounded bg-slate-100">
+                      <div className="mt-1 h-2 rounded bg-slate-100 dark:bg-slate-800">
                         <div
                           className={`h-2 rounded ${colorOf(p.key)}`}
                           style={{ width: `${(p.durationMs / topDuration) * 100}%` }}
@@ -204,15 +216,17 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
                     </li>
                   ))}
                   {stats.places.length === 0 && (
-                    <li className="p-4 text-center text-sm text-slate-400">
+                    <li className="p-4 text-center text-sm text-slate-400 dark:text-slate-500">
                       이 기간의 체류 기록이 없습니다
                     </li>
                   )}
                 </ul>
               </section>
 
-              <section className="rounded-lg bg-white p-3 shadow-sm">
-                <h3 className="pb-2 text-sm font-bold text-slate-900">요일별 체류</h3>
+              <section className="rounded-lg bg-white p-3 shadow-sm dark:bg-slate-900">
+                <h3 className="pb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                  요일별 체류
+                </h3>
                 <div className="flex h-28 items-end gap-2">
                   {weekdayBars.map((bar, w) => (
                     <div key={WEEKDAYS[w]} className="flex flex-1 flex-col items-center gap-1 self-end">
@@ -228,11 +242,13 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
                           />
                         ))}
                       </div>
-                      <span className="text-[10px] text-slate-400">{WEEKDAYS[w]}</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                        {WEEKDAYS[w]}
+                      </span>
                     </div>
                   ))}
                 </div>
-                <div className="flex flex-wrap gap-2 pt-2 text-[10px] text-slate-500">
+                <div className="flex flex-wrap gap-2 pt-2 text-[10px] text-slate-500 dark:text-slate-400">
                   {labeled.slice(0, PLACE_COLORS.length).map((p) => (
                     <span key={p.key} className="flex items-center gap-1">
                       <span className={`h-2 w-2 rounded-sm ${colorOf(p.key)}`} />
@@ -248,15 +264,15 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
                 </div>
               </section>
 
-              <section className="rounded-lg bg-white p-3 text-sm text-slate-700 shadow-sm">
-                <h3 className="pb-1 text-sm font-bold text-slate-900">이동</h3>
+              <section className="rounded-lg bg-white p-3 text-sm text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-300">
+                <h3 className="pb-1 text-sm font-bold text-slate-900 dark:text-slate-100">이동</h3>
                 {stats.move.count > 0 ? (
                   <p>
                     {stats.move.count}회 · {fmtDuration(stats.move.totalMs)} ·{' '}
                     {(stats.move.distanceM / 1000).toFixed(1)}km(직선)
                   </p>
                 ) : (
-                  <p className="text-slate-400">이 기간의 이동 기록이 없습니다</p>
+                  <p className="text-slate-400 dark:text-slate-500">이 기간의 이동 기록이 없습니다</p>
                 )}
               </section>
             </>

@@ -217,14 +217,14 @@ export function MapView({
     <div className="relative [contain:paint] [transform:translateZ(0)]">
       <div ref={containerRef} className="h-64 w-full rounded-xl" />
       {/* left-12: leaflet 기본 줌 컨트롤(좌상단, 폭 ~44px)을 가리지 않는 위치 */}
-      <div className="absolute left-12 top-2 z-[1000] flex gap-0.5 rounded-full bg-white p-1 shadow-md">
+      <div className="absolute left-12 top-2 z-[1000] flex gap-0.5 rounded-full bg-white p-1 shadow-md dark:bg-slate-800">
         {(['day', 'all'] as const).map((m) => (
           <button
             key={m}
             type="button"
             onClick={() => onModeChange(m)}
             className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-              mode === m ? 'bg-blue-600 text-white' : 'text-slate-500'
+              mode === m ? 'bg-blue-600 text-white' : 'text-slate-500 dark:text-slate-400'
             }`}
           >
             {m === 'day' ? '하루' : '전체'}
@@ -236,7 +236,7 @@ export function MapView({
         onClick={onMyLocation}
         disabled={locating}
         aria-label="내 위치"
-        className={`absolute right-2 top-2 z-[1000] rounded-full bg-white p-2.5 text-slate-700 shadow-md disabled:text-slate-300 ${
+        className={`absolute right-2 top-2 z-[1000] rounded-full bg-white p-2.5 text-slate-700 shadow-md disabled:text-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:disabled:text-slate-600 ${
           locating ? 'animate-pulse' : ''
         }`}
       >
