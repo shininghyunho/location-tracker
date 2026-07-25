@@ -99,13 +99,11 @@ function App() {
   });
   const dataDaySet = useMemo(() => new Set(dataDays), [dataDays]);
 
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [showImportGuide, setShowImportGuide] = useState(false);
-  const [showPermRationale, setShowPermRationale] = useState(false);
-  const [showCollector, setShowCollector] = useState(false);
-  const [showAbout, setShowAbout] = useState(false);
-  const [showStats, setShowStats] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  // 오버레이는 설계상 한 번에 하나만 — union 하나로 동시 열림을 타입 수준에서 차단.
+  // labelTarget은 열림 여부가 아니라 대상 Stay를 담으므로 별도 유지
+  const [overlay, setOverlay] = useState<
+    'calendar' | 'importGuide' | 'permRationale' | 'collector' | 'about' | 'stats' | 'menu' | null
+  >(null);
   const [labelTarget, setLabelTarget] = useState<Stay | null>(null);
   const [selected, setSelected] = useState<Stay | null>(null);
   const [ongoingSelected, setOngoingSelected] = useState(false);
@@ -119,28 +117,8 @@ function App() {
       setLabelTarget(null);
       return true;
     }
-    if (showCalendar) {
-      setShowCalendar(false);
-      return true;
-    }
-    if (showImportGuide) {
-      setShowImportGuide(false);
-      return true;
-    }
-    if (showPermRationale) {
-      setShowPermRationale(false);
-      return true;
-    }
-    if (showCollector) {
-      setShowCollector(false);
-      return true;
-    }
-    if (showStats) {
-      setShowStats(false);
-      return true;
-    }
-    if (menuOpen) {
-      setMenuOpen(false);
+    if (overlay) {
+      setOverlay(null);
       return true;
     }
     return false;
@@ -172,9 +150,12 @@ function App() {
 
   // 수집 시작(시트에서 호출): 이미 '항상 허용'이면 바로 시작, 아니면 사전 설명 모달(U9)부터
   const handleStartRequest = () => {
-    setShowCollector(false);
-    if (permStatus === AuthorizationStatus.Always) void start();
-    else setShowPermRationale(true);
+    if (permStatus === AuthorizationStatus.Always) {
+      setOverlay(null);
+      void start();
+    } else {
+      setOverlay('permRationale');
+    }
   };
 
   // 왼쪽 스와이프 = 다음날(미래는 ▶ 버튼과 동일하게 차단), 오른쪽 스와이프 = 전날
@@ -277,7 +258,7 @@ function App() {
           {/* 상태 표시만 — 시작/중지 행동은 시트 안(CollectorSheet)으로. 꺼짐은 amber로 시선 유도 */}
           <button
             type="button"
-            onClick={() => setShowCollector(true)}
+            onClick={() => setOverlay('collector')}
             className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
               isCollecting
                 ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
@@ -289,7 +270,7 @@ function App() {
           <button
             type="button"
             aria-label="통계"
-            onClick={() => setShowStats(true)}
+            onClick={() => setOverlay('stats')}
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600"
           >
             <svg viewBox="0 0 16 16" className="h-5 w-5" fill="currentColor" aria-hidden="true">
@@ -302,22 +283,19 @@ function App() {
             <button
               type="button"
               aria-label="메뉴"
-              onClick={() => setMenuOpen(!menuOpen)}
+              onClick={() => setOverlay(overlay === 'menu' ? null : 'menu')}
               className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600"
             >
               ⚙
             </button>
-            {menuOpen && (
+            {overlay === 'menu' && (
               <>
                 {/* 지도(leaflet z-index ~1000)보다 위 — 바깥 탭으로 닫기 */}
-                <div className="fixed inset-0 z-[1040]" onClick={() => setMenuOpen(false)} />
+                <div className="fixed inset-0 z-[1040]" onClick={() => setOverlay(null)} />
                 <div className="absolute right-0 z-[1050] mt-1 w-36 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
                   <button
                     type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setShowImportGuide(true);
-                    }}
+                    onClick={() => setOverlay('importGuide')}
                     disabled={importing !== null}
                     className="block w-full px-4 py-2 text-left text-sm text-slate-700 disabled:text-slate-300"
                   >
@@ -325,10 +303,7 @@ function App() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setShowAbout(true);
-                    }}
+                    onClick={() => setOverlay('about')}
                     className="block w-full px-4 py-2 text-left text-sm text-slate-700"
                   >
                     앱 정보
@@ -380,7 +355,7 @@ function App() {
         <button type="button" onClick={() => changeDate(addDaysStr(date, -1))} className="px-4 py-1 text-lg text-slate-600">
           ◀
         </button>
-        <button type="button" onClick={() => setShowCalendar(true)} className="text-sm font-semibold text-slate-900">
+        <button type="button" onClick={() => setOverlay('calendar')} className="text-sm font-semibold text-slate-900">
           {fmtDateWithDay(date)}
           {date === today && <span className="ml-1 text-blue-600">(오늘)</span>}
         </button>
@@ -526,37 +501,37 @@ function App() {
         onChange={onImportFile}
       />
 
-      {showCalendar && (
+      {overlay === 'calendar' && (
         <CalendarSheet
           value={date}
           today={today}
           dataDays={dataDaySet}
           onPick={(d) => {
             changeDate(d);
-            setShowCalendar(false);
+            setOverlay(null);
           }}
-          onClose={() => setShowCalendar(false)}
+          onClose={() => setOverlay(null)}
         />
       )}
-      {showImportGuide && (
+      {overlay === 'importGuide' && (
         <ImportGuideSheet
           onPickFile={() => {
-            setShowImportGuide(false);
+            setOverlay(null);
             fileRef.current?.click();
           }}
-          onClose={() => setShowImportGuide(false)}
+          onClose={() => setOverlay(null)}
         />
       )}
-      {showPermRationale && (
+      {overlay === 'permRationale' && (
         <PermissionSheet
           onConfirm={() => {
-            setShowPermRationale(false);
+            setOverlay(null);
             void start();
           }}
-          onClose={() => setShowPermRationale(false)}
+          onClose={() => setOverlay(null)}
         />
       )}
-      {showCollector && (
+      {overlay === 'collector' && (
         <CollectorSheet
           isCollecting={isCollecting}
           permStatus={permStatus}
@@ -564,13 +539,13 @@ function App() {
           onStart={handleStartRequest}
           onStop={() => {
             void stop();
-            setShowCollector(false);
+            setOverlay(null);
           }}
-          onClose={() => setShowCollector(false)}
+          onClose={() => setOverlay(null)}
         />
       )}
-      {showAbout && <AboutSheet onClose={() => setShowAbout(false)} />}
-      {showStats && <StatsPanel onClose={() => setShowStats(false)} />}
+      {overlay === 'about' && <AboutSheet onClose={() => setOverlay(null)} />}
+      {overlay === 'stats' && <StatsPanel onClose={() => setOverlay(null)} />}
       {labelTarget && <LabelSheet stay={labelTarget} onClose={() => setLabelTarget(null)} />}
     </div>
   );
