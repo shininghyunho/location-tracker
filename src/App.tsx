@@ -22,6 +22,7 @@ import { useSwipe } from './lib/useSwipe';
 import { importTimeline } from './features/import/importTimeline';
 import { ImportGuideSheet } from './features/import/ImportGuideSheet';
 import { AboutSheet } from './features/about/AboutSheet';
+import { ThemeSheet } from './features/theme/ThemeSheet';
 import { BackupSheet } from './features/backup/BackupSheet';
 import type { ImportProgress } from './features/import/importTimeline';
 import { appLog } from './lib/appLog';
@@ -109,6 +110,7 @@ function App() {
     | 'permRationale'
     | 'collector'
     | 'about'
+    | 'theme'
     | 'stats'
     | 'search'
     | 'menu'
@@ -353,6 +355,13 @@ function App() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => setOverlay('theme')}
+                    className="block w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-200"
+                  >
+                    테마
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setOverlay('about')}
                     className="block w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-200"
                   >
@@ -527,6 +536,7 @@ function App() {
       )}
       {overlay === 'backup' && <BackupSheet onClose={() => setOverlay(null)} />}
       {overlay === 'about' && <AboutSheet onClose={() => setOverlay(null)} />}
+      {overlay === 'theme' && <ThemeSheet onClose={() => setOverlay(null)} />}
       {overlay === 'stats' && <StatsPanel onClose={() => setOverlay(null)} />}
       {overlay === 'search' && (
         <SearchPanel

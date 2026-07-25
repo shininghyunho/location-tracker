@@ -7,6 +7,15 @@
     <title>위치트래커</title>
   </head>
   <body>
+    <!-- 번들 로드 전 .dark 선적용 — 다크 테마에서 켤 때마다 흰 화면이 번쩍이는 것 방지 (본 로직=src/lib/theme.ts) -->
+    <script>
+      var themeMode = localStorage.getItem('themeMode');
+      document.documentElement.classList.toggle(
+        'dark',
+        themeMode === 'dark' ||
+          (themeMode !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches),
+      );
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

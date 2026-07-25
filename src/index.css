@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* UA 렌더링(폼 컨트롤·confirm 다이얼로그·스크롤바)도 시스템 테마를 따르게 한다 */
+/* UA 렌더링(폼 컨트롤·confirm 다이얼로그·스크롤바) 기본값 — JS 로드 후엔 theme.ts가 인라인 스타일로 덮는다 */
 :root {
   color-scheme: light dark;
 }
@@ -21,22 +21,20 @@
 
 /* 지도 타일은 다크에서도 라이트 유지 — 그 위 leaflet 기본 컨트롤만 앱 UI와 같은 다크로.
    leaflet.css가 번들에서 이 파일보다 뒤라 .leaflet-container를 붙여 특이도로 이긴다 */
-@media (prefers-color-scheme: dark) {
-  .leaflet-container .leaflet-bar a {
-    background-color: #1e293b;
-    border-bottom-color: #334155;
-    color: #e2e8f0;
-  }
-  .leaflet-container .leaflet-bar a.leaflet-disabled {
-    background-color: #1e293b;
-    color: #475569;
-  }
-  /* leaflet 원본이 .leaflet-container .leaflet-control-attribution(동일 특이도)라 클래스 하나 더 */
-  .leaflet-container .leaflet-control-attribution.leaflet-control {
-    background-color: rgba(30, 41, 59, 0.8);
-    color: #94a3b8;
-  }
-  .leaflet-container .leaflet-control-attribution.leaflet-control a {
-    color: #94a3b8;
-  }
+.dark .leaflet-container .leaflet-bar a {
+  background-color: #1e293b;
+  border-bottom-color: #334155;
+  color: #e2e8f0;
+}
+.dark .leaflet-container .leaflet-bar a.leaflet-disabled {
+  background-color: #1e293b;
+  color: #475569;
+}
+/* leaflet 원본이 .leaflet-container .leaflet-control-attribution(동일 특이도)라 클래스 하나 더 */
+.dark .leaflet-container .leaflet-control-attribution.leaflet-control {
+  background-color: rgba(30, 41, 59, 0.8);
+  color: #94a3b8;
+}
+.dark .leaflet-container .leaflet-control-attribution.leaflet-control a {
+  color: #94a3b8;
 }

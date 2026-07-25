@@ -4,6 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import './index.css';
 import App from './App.tsx';
+import { applyTheme } from './lib/theme';
+
+applyTheme();
 
 const queryClient = new QueryClient();
 
