@@ -463,6 +463,7 @@ function App() {
         {/* key={date}로 remount → 날짜가 바뀔 때마다 이동 방향의 slide-in이 한 번 재생된다 */}
         <StayList
           key={date}
+          viewDate={date}
           stays={stays}
           liveStayId={liveStayId}
           ongoing={ongoing}

@@ -4,6 +4,7 @@ import type { StayDraft } from './detectStays';
 import { StayCard } from './StayCard';
 
 interface StayListProps {
+  viewDate: string;
   stays: Stay[];
   liveStayId: number | null;
   ongoing: StayDraft | null;
@@ -20,6 +21,7 @@ interface StayListProps {
 }
 
 export function StayList({
+  viewDate,
   stays,
   liveStayId,
   ongoing,
@@ -58,6 +60,7 @@ export function StayList({
                 : (s.label ?? '이름 없는 장소')
             }
             live={isLive}
+            viewDate={viewDate}
             startTs={s.start_ts}
             endTs={s.end_ts}
             lat={s.lat}
@@ -79,6 +82,7 @@ export function StayList({
         <StayCard
           title={ongoingLabel ? `${ongoingLabel}(현재 위치)` : '지금 여기'}
           live
+          viewDate={viewDate}
           startTs={ongoing.startTs}
           endTs={ongoing.endTs}
           lat={ongoing.lat}

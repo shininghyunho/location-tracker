@@ -1,13 +1,22 @@
 import type { RefCallback } from 'react';
-import { fmtDuration } from '../../lib/date';
+import { fmtDuration, toDate } from '../../lib/date';
 
-function fmtTime(ts: string): string {
-  return ts.slice(11, 16);
+// 자정 넘김 체류는 양쪽 날짜 리스트에 다 떠서, 보는 날짜와 다른 날의 시각엔 날짜 표식을 붙인다
+function fmtTime(ts: string, viewDate: string): string {
+  const time = ts.slice(11, 16);
+  const day = ts.slice(0, 10);
+  if (day === viewDate) return time;
+  const diff = Math.round((toDate(day).getTime() - toDate(viewDate).getTime()) / 86_400_000);
+  if (diff === -1) return `${time}(어제)`;
+  if (diff === 1) return `${time}(다음날)`;
+  const [, m, d] = day.split('-');
+  return `${time}(${Number(m)}/${Number(d)})`;
 }
 
 interface StayCardProps {
   title: string;
   live: boolean; // 진행 중 표시 — 파란 강조, 시간 '째' 접미사, 종료시각 대신 '진행 중'
+  viewDate: string;
   startTs: string;
   endTs: string;
   lat: number;
@@ -22,6 +31,7 @@ interface StayCardProps {
 export function StayCard({
   title,
   live,
+  viewDate,
   startTs,
   endTs,
   lat,
@@ -54,7 +64,7 @@ export function StayCard({
         </span>
       </div>
       <div className="text-sm text-slate-500 dark:text-slate-400">
-        {fmtTime(startTs)} ~ {live ? '진행 중' : fmtTime(endTs)}
+        {fmtTime(startTs, viewDate)} ~ {live ? '진행 중' : fmtTime(endTs, viewDate)}
       </div>
       {/* 좌표는 매일 보는 정보가 아니라서 펼쳤을 때만 (U19) */}
       {selected && (
