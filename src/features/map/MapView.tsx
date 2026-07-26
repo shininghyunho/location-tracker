@@ -44,6 +44,14 @@ const STAY_ICON = L.divIcon({
   iconAnchor: [9, 9],
 });
 
+// 체류 마커(18px 빨강)와 같은 좌표에 겹쳐도 둘 다 읽히게 — 더 작게, 흰 테두리로 구분(궤적 파란 선 위에서도)
+const MY_LOC_ICON = L.divIcon({
+  className: '',
+  html: '<div style="width:16px;height:16px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 4px rgba(0,0,0,0.4)"></div>',
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+});
+
 // 이름표는 누적 상위만 — 전부 붙이면 밀집 지역에서 겹쳐 못 읽는다
 const FOOTPRINT_NAME_TOP = 8;
 
@@ -179,18 +187,40 @@ export function MapView({
   };
 
   const [locating, setLocating] = useState(false);
+  // 데이터 레이어(layer) 밖에 직접 얹는다 — 30초 재조회의 clearLayers에 지워지지 않게
+  const myLocRef = useRef<L.Marker | null>(null);
+
+  // 스냅샷 위치라 문맥이 바뀌면 거짓 정보 — 날짜·모드 전환 시 제거
+  useEffect(() => {
+    myLocRef.current?.remove();
+    myLocRef.current = null;
+  }, [mode, fitKey]);
+
+  const showMyLocation = (lat: number, lng: number) => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (myLocRef.current) myLocRef.current.setLatLng([lat, lng]);
+    else
+      myLocRef.current = L.marker([lat, lng], {
+        icon: MY_LOC_ICON,
+        zIndexOffset: 1000,
+        interactive: false, // 아래 깔린 체류 마커의 탭을 막지 않는다
+      }).addTo(map);
+    flyWithTrackHidden((m) => m.flyTo([lat, lng], FOCUS_ZOOM, FLY_OPTS));
+  };
+
   const onMyLocation = async () => {
     setLocating(true);
     try {
       if (Capacitor.isNativePlatform()) {
         // persist: false — 버튼 조회로 points 데이터를 오염시키지 않는다
         const loc = await BackgroundGeolocation.getCurrentPosition({ samples: 1, timeout: 30, persist: false });
-        flyWithTrackHidden((m) => m.flyTo([loc.coords.latitude, loc.coords.longitude], FOCUS_ZOOM, FLY_OPTS));
+        showMyLocation(loc.coords.latitude, loc.coords.longitude);
       } else {
         const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
           navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10_000 }),
         );
-        flyWithTrackHidden((m) => m.flyTo([pos.coords.latitude, pos.coords.longitude], FOCUS_ZOOM, FLY_OPTS));
+        showMyLocation(pos.coords.latitude, pos.coords.longitude);
       }
     } catch {
       // 위치 조회 실패(권한 거부·타임아웃)는 조용히 무시
