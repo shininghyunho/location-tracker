@@ -19,6 +19,7 @@ import { StatsPanel } from './features/stats/StatsPanel';
 import { SearchPanel } from './features/search/SearchPanel';
 import { CalendarSheet } from './features/calendar/CalendarSheet';
 import { useSwipe } from './lib/useSwipe';
+import type { SlideDir } from './lib/slide';
 import { importTimeline } from './features/import/importTimeline';
 import { ImportGuideSheet } from './features/import/ImportGuideSheet';
 import { AboutSheet } from './features/about/AboutSheet';
@@ -130,7 +131,7 @@ function App() {
     enabled: mapMode === 'all',
   });
   // 날짜 변경 방향 — 새 날짜 콘텐츠가 이동 방향에서 밀려 들어오는 애니메이션에 쓴다 (초기 로드엔 없음)
-  const [slideDir, setSlideDir] = useState<'next' | 'prev' | null>(null);
+  const [slideDir, setSlideDir] = useState<SlideDir>(null);
   const cardRefs = useRef(new Map<number, HTMLLIElement>());
 
   // Android 하드웨어 뒤로가기: 열린 오버레이를 위에서부터 닫고, 없으면 종료 대신 백그라운드로

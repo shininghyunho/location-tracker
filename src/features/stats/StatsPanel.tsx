@@ -10,6 +10,8 @@ import {
 } from './period';
 import type { PeriodUnit } from './period';
 import { fmtDuration, todayStr } from '../../lib/date';
+import { slideClass } from '../../lib/slide';
+import type { SlideDir } from '../../lib/slide';
 import { computeStats, UNLABELED } from './computeStats';
 import { PlaceCalendar } from './PlaceCalendar';
 import { YearStats } from './YearStats';
@@ -55,7 +57,7 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
   const [anchor, setAnchor] = useState(() => startOfPeriod('week', today));
   const [expanded, setExpanded] = useState<string | null>(null);
   // 메인 화면과 동일하게 이동 방향의 slide-in을 한 번 재생 — 단위 토글은 방향 없음(null)
-  const [slideDir, setSlideDir] = useState<'next' | 'prev' | null>(null);
+  const [slideDir, setSlideDir] = useState<SlideDir>(null);
 
   // 단위를 바꾸면 오늘이 든 기간으로 초기화 — 주↔월 앵커는 서로 호환되지 않는다
   const changeUnit = (u: PeriodUnit) => {
@@ -166,16 +168,7 @@ export function StatsPanel({ onClose }: { onClose: () => void }) {
 
       <div {...swipePeriod} className="mt-3 flex flex-col overflow-x-hidden overflow-y-auto pb-4">
         {/* key로 remount → 기간이 바뀔 때마다 이동 방향의 slide-in이 한 번 재생된다 */}
-        <div
-          key={`${unit}-${anchor}`}
-          className={`flex flex-col gap-3 ${
-            slideDir === 'next'
-              ? 'animate-slide-in-right'
-              : slideDir === 'prev'
-                ? 'animate-slide-in-left'
-                : ''
-          }`}
-        >
+        <div key={`${unit}-${anchor}`} className={`flex flex-col gap-3 ${slideClass(slideDir)}`}>
           {unit === 'year' ? (
             <YearStats stays={stays} fromTs={fromTs} toTs={toTs} />
           ) : (

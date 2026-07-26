@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { BottomSheet } from '../../components/BottomSheet';
+import { slideClass } from '../../lib/slide';
+import type { SlideDir } from '../../lib/slide';
 import { useSwipe } from '../../lib/useSwipe';
 import { shiftPeriod, startOfPeriod } from '../stats/period';
 import { buildMonthGrid } from './monthGrid';
@@ -17,7 +19,7 @@ interface CalendarSheetProps {
 export function CalendarSheet({ value, today, dataDays, onPick, onClose }: CalendarSheetProps) {
   const [viewMonth, setViewMonth] = useState(startOfPeriod('month', value)); // 'YYYY-MM-01'
   // 메인 화면과 동일하게 이동 방향의 slide-in을 한 번 재생 (열릴 땐 없음)
-  const [slideDir, setSlideDir] = useState<'next' | 'prev' | null>(null);
+  const [slideDir, setSlideDir] = useState<SlideDir>(null);
   const grid = buildMonthGrid(viewMonth);
   // 다음 달 첫날이 오늘보다 뒤면 미래 달 — ▶ 비활성
   const nextDisabled = shiftPeriod('month', viewMonth, 1) > today;
@@ -68,13 +70,7 @@ export function CalendarSheet({ value, today, dataDays, onPick, onClose }: Calen
         {/* key={viewMonth}로 remount → 달이 바뀔 때마다 이동 방향의 slide-in이 한 번 재생된다 */}
         <div
           key={viewMonth}
-          className={`grid grid-cols-7 gap-1 text-center ${
-            slideDir === 'next'
-              ? 'animate-slide-in-right'
-              : slideDir === 'prev'
-                ? 'animate-slide-in-left'
-                : ''
-          }`}
+          className={`grid grid-cols-7 gap-1 text-center ${slideClass(slideDir)}`}
         >
           {grid.cells.map((cell, i) => {
             // 빈 셀도 날짜 셀과 같은 높이를 차지해야 6행 높이가 유지된다 — 안 그러면 빈 행이 찌부러진다

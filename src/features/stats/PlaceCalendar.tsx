@@ -5,6 +5,8 @@ import { getVisitDaysByLabel } from '../../db/stays';
 import { buildMonthGrid } from '../calendar/monthGrid';
 import { periodRange, shiftPeriod, startOfPeriod } from './period';
 import { todayStr } from '../../lib/date';
+import { slideClass } from '../../lib/slide';
+import type { SlideDir } from '../../lib/slide';
 import { longestStreak } from './attendance';
 import { useSwipe } from '../../lib/useSwipe';
 
@@ -14,7 +16,7 @@ export function PlaceCalendar({ label }: { label: string }) {
   const today = todayStr();
   const [viewMonth, setViewMonth] = useState(() => startOfPeriod('month', today)); // 'YYYY-MM-01'
   // 이동 방향의 slide-in을 한 번 재생 (열릴 땐 없음)
-  const [slideDir, setSlideDir] = useState<'next' | 'prev' | null>(null);
+  const [slideDir, setSlideDir] = useState<SlideDir>(null);
   const { fromTs, toTs } = periodRange('month', viewMonth);
 
   const { data: days = [] } = useQuery({
@@ -86,13 +88,7 @@ export function PlaceCalendar({ label }: { label: string }) {
         {/* key={viewMonth}로 remount → 달이 바뀔 때마다 이동 방향의 slide-in이 한 번 재생된다 */}
         <div
           key={viewMonth}
-          className={`grid grid-cols-7 gap-1 text-center ${
-            slideDir === 'next'
-              ? 'animate-slide-in-right'
-              : slideDir === 'prev'
-                ? 'animate-slide-in-left'
-                : ''
-          }`}
+          className={`grid grid-cols-7 gap-1 text-center ${slideClass(slideDir)}`}
         >
           {grid.cells.map((cell, i) => {
             if (cell === null) return <div key={`b${i}`} className="h-8" />;

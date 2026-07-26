@@ -1,5 +1,7 @@
 import type { MutableRefObject } from 'react';
 import type { Stay } from '../../db/stays';
+import { slideClass } from '../../lib/slide';
+import type { SlideDir } from '../../lib/slide';
 import type { StayDraft } from './detectStays';
 import { StayCard } from './StayCard';
 
@@ -11,7 +13,7 @@ interface StayListProps {
   ongoingLabel: string | null;
   selected: Stay | null;
   ongoingSelected: boolean;
-  slideDir: 'next' | 'prev' | null;
+  slideDir: SlideDir;
   cardRefs: MutableRefObject<Map<number, HTMLLIElement>>;
   onSelect: (s: Stay | null) => void;
   onToggleOngoing: () => void;
@@ -37,15 +39,7 @@ export function StayList({
   onEditOngoing,
 }: StayListProps) {
   return (
-    <ul
-      className={`flex flex-col gap-2 ${
-        slideDir === 'next'
-          ? 'animate-slide-in-right'
-          : slideDir === 'prev'
-            ? 'animate-slide-in-left'
-            : ''
-      }`}
-    >
+    <ul className={`flex flex-col gap-2 ${slideClass(slideDir)}`}>
       {stays.map((s) => {
         // 이어붙여 저장 체류로 흡수된 진행 중 체류면 '진행 중'으로 표시
         const isLive = s.id === liveStayId;

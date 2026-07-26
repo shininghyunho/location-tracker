@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { BottomSheet } from '../../components/BottomSheet';
+import { slideClass } from '../../lib/slide';
+import type { SlideDir } from '../../lib/slide';
 import { useSwipe } from '../../lib/useSwipe';
 
 interface ImportGuideSheetProps {
@@ -35,7 +37,7 @@ const STEPS = [
 export function ImportGuideSheet({ onPickFile, onClose }: ImportGuideSheetProps) {
   const [step, setStep] = useState(0);
   // 메인 화면과 동일하게 이동 방향의 slide-in을 한 번 재생 (열릴 땐 없음)
-  const [slideDir, setSlideDir] = useState<'next' | 'prev' | null>(null);
+  const [slideDir, setSlideDir] = useState<SlideDir>(null);
   const isLast = step === STEPS.length - 1;
 
   const moveStep = (delta: number) => {
@@ -63,16 +65,7 @@ export function ImportGuideSheet({ onPickFile, onClose }: ImportGuideSheetProps)
       </div>
       <div {...swipeStep} className="mt-3 overflow-x-hidden">
         {/* key={step}로 remount → 스텝이 바뀔 때마다 이동 방향의 slide-in이 한 번 재생된다 */}
-        <div
-          key={step}
-          className={
-            slideDir === 'next'
-              ? 'animate-slide-in-right'
-              : slideDir === 'prev'
-                ? 'animate-slide-in-left'
-                : ''
-          }
-        >
+        <div key={step} className={slideClass(slideDir)}>
           <img
             src={STEPS[step].img}
             alt={`가져오기 ${step + 1}단계`}
