@@ -9,7 +9,7 @@ import {
   NotificationPriority,
 } from '@transistorsoft/background-geolocation-types';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { insertPoint } from '../../db/points';
+import { batchInsertPoints } from '../../db/points';
 import { appLog } from '../../lib/appLog';
 import { toLocalIso } from '../../lib/localIso';
 
@@ -43,18 +43,26 @@ export function useCollector(onPointSaved: () => void) {
     drainingRef.current = true;
     try {
       const records = (await BackgroundGeolocation.getLocations()) as StoredLocation[];
-      for (const r of records) {
-        const epochMs = typeof r.timestamp === 'number' ? r.timestamp : Date.parse(r.timestamp);
-        await insertPoint({
-          ts: toLocalIso(epochMs),
-          lat: r.coords.latitude,
-          lng: r.coords.longitude,
-          accuracy_m: r.coords.accuracy ?? null,
-          source: 'collector',
-        });
-        await BackgroundGeolocation.destroyLocation(r.uuid);
+      if (records.length === 0) return;
+      await batchInsertPoints(
+        records.map((r) => {
+          const epochMs = typeof r.timestamp === 'number' ? r.timestamp : Date.parse(r.timestamp);
+          return {
+            ts: toLocalIso(epochMs),
+            lat: r.coords.latitude,
+            lng: r.coords.longitude,
+            accuracy_m: r.coords.accuracy ?? null,
+            source: 'collector' as const,
+          };
+        }),
+      );
+      // 삭제보다 화면이 먼저 — destroy는 건당 브릿지 호출이라 백로그가 크면 분 단위로 걸린다
+      onPointSaved();
+      for (let i = 0; i < records.length; i += 50) {
+        await Promise.all(
+          records.slice(i, i + 50).map((r) => BackgroundGeolocation.destroyLocation(r.uuid)),
+        );
       }
-      if (records.length > 0) onPointSaved();
     } catch (e) {
       setError(errMsg(e));
       void appLog('error', 'drain', errMsg(e));
@@ -96,9 +104,14 @@ export function useCollector(onPointSaved: () => void) {
         locationUpdateInterval: SAVE_INTERVAL_MS,
         disableElasticity: true,
         locationAuthorizationRequest: 'Always',
-        // 정지 감지를 끄면 포그라운드 서비스가 내려가지 않아 프로세스가 캐시로 밀려 죽는 것을 막는다
+      },
+      activity: {
+        // 정지 감지를 끄면 포그라운드 서비스가 내려가지 않아 프로세스가 캐시로 밀려 죽는 것을 막는다.
+        // geolocation 섹션에도 타입은 있지만 네이티브가 읽는 곳은 activity뿐이다
         disableStopDetection: true,
       },
+      // 기본 1일이라 앱을 하루 안 열면 미회수 백로그가 삭제된다 (하루 ~0.9MB, 90일 최대 ~78MB)
+      persistence: { maxDaysToPersist: 90 },
       app: {
         heartbeatInterval: SAVE_INTERVAL_MS / 1000,
         stopOnTerminate: false, // 앱을 스와이프로 꺼도 수집 유지
